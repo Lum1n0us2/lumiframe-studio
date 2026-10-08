@@ -1,0 +1,10 @@
+# Local reference artwork and generated QA output
+/[1-5].gif
+/assets/
+/reference/
+/verification/
+/asset-data.js
+/check.cjs
+node_modules/
+.DS_Store
+Thumbs.db
