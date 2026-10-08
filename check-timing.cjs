@@ -95,3 +95,8 @@ for(const duration of [6,8,12]){
  assert.equal(sandbox.layerProgress((duration*20-4)/20,'main').alpha,1);
 }
 console.log('PASS: phone music → music → name → messages → quote → main exit independently in every loop duration.');
+const tintDirections=[];const tintContext=new Proxy({createLinearGradient(...points){tintDirections.push(points);return {addColorStop(){}}}},{get(o,k){return k in o?o[k]:()=>{}}});
+sandbox.glass(tintContext,10,20,100,60,12,.7,'none');assert.equal(tintDirections.length,0);
+sandbox.glass(tintContext,10,20,100,60,12,.7,'name');assert.deepEqual(tintDirections.pop(),[110,20,10,80]);
+sandbox.glass(tintContext,10,20,100,60,12,.7,'messages');assert.deepEqual(tintDirections.pop(),[10,80,110,20]);
+console.log('PASS: phone player has no tint gradient; name and message cards use opposing diagonals.');
