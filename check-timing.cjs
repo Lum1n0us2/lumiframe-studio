@@ -71,4 +71,11 @@ const phone=t=>sandbox.layerProgress(t,'phoneMusic');
 assert.equal(phone(1.3).alpha,0);assert(phone(1.4).scaleX<phone(1.55).scaleX);
 assert.equal(phone(1.55).alpha,1);assert.equal(phone(1.55).contentAlpha,0);assert.equal(phone(1.8).contentAlpha,1);
 assert.equal(phone(5.5).scaleX,1);assert(phone(5.6).scaleX<phone(5.5).scaleX);assert.equal(phone(5.75).alpha,0);
-console.log('PASS: phone capsule expands on frames 26–31, reveals content on 31–36, and shrinks away on 110–115.');
+console.log('PASS: phone capsule expands and settles on frames 26–34, reveals content on 31–36, and shrinks away on 110–115.');
+
+const musicScales=Array.from({length:9},(_,i)=>sandbox.layerProgress((12+i)/20,'music').scale);
+const phoneScales=Array.from({length:9},(_,i)=>phone((26+i)/20).scaleX);
+assert(musicScales[0]<1&&Math.max(...musicScales)>1.03);assert.equal(musicScales.at(-1),1);
+assert(phoneScales[0]<1&&Math.max(...phoneScales)>1.06);assert.equal(phoneScales.at(-1),1);
+assert(Math.max(...musicScales)>musicScales.at(-1));assert(Math.max(...phoneScales)>phoneScales.at(-1));
+console.log('PASS: both players overshoot their final size and settle back to exactly 100%.');
