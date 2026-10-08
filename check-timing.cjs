@@ -7,6 +7,7 @@ vm.runInContext(source.slice(source.indexOf('function rr('),source.indexOf('func
 const stack=[],draws=[];let rect;
 const c=new Proxy({globalAlpha:1,save(){stack.push(this.globalAlpha)},restore(){assert(stack.length>0);this.globalAlpha=stack.pop()},roundRect(...args){rect=args},fill(){if(rect)draws.push({x:rect[0],y:rect[1],a:this.globalAlpha})},drawImage(im,x,y){draws.push({x,y,a:this.globalAlpha})},measureText(s){return {width:s.length*11}},createLinearGradient(){return {addColorStop(){}}},createRadialGradient(){return {addColorStop(){}}}},{get(o,k){return k in o?o[k]:()=>{}}});
 sandbox.c=c;sandbox.state={duration:8,bg:'#fffafb',accent:'#efb3d0',reply:'#9cd8eb',float:false,sparkles:false,hearts:false,card:true,zoom:1,position:.5,switch:true,quote:'첫 줄\n둘째 줄\n셋째 줄',messages:'안녕\n반가워',pair:'이름',handle:'@pair',song:'노래',artist:'가수',chat:true};sandbox.imgs={main:{width:480,height:750}};sandbox.playing=true;
+const originalBubble=sandbox.speechBubble;sandbox.speechBubble=(c,x,y,...args)=>{draws.push({x,y,a:c.globalAlpha});return originalBubble(c,x,y,...args)};
 const positions=[[530,55],[100,138],[515,429],[615,522],[718,206],[981,720]];
 const starts=[0,2,6,9,12,24],fades=[4,5,4,5,6,8];
 for(const duration of [6,8,12]){sandbox.state.duration=duration;for(let frame=0;frame<duration*20;frame++){draws.length=0;sandbox.t=frame/20;vm.runInContext('render(c,t)',sandbox);assert.equal(stack.length,0);positions.forEach(([x,y],i)=>{const calls=draws.filter(d=>d.x===x&&d.y===y);assert(calls.length);const alpha=Math.max(...calls.map(d=>d.a));if(frame<=starts[i])assert.equal(alpha,0,`layer ${i} appeared early at frame ${frame}`);else if(frame<duration*20-9){assert(alpha>0,`layer ${i} missing at frame ${frame}`);if(frame>=starts[i]+fades[i])assert(alpha>.99)}});assert.equal(c.globalAlpha,1)}}
@@ -57,3 +58,10 @@ for(let frame=0;frame<120;frame++){
 }
 for(let i=0;i<12;i++){const first=sandbox.featherPose(i,0,1416,984),last=sandbox.featherPose(i,1,1416,984);for(const key of Object.keys(first))assert(Math.abs(first[key]-last[key])<1e-8)}
 console.log('PASS: feathers cover all three screen regions throughout 120 frames and repeat without a position jump.');
+
+for(const side of ['left','right'])for(const alpha of [1,.5,.1]){
+ let fills=0,paths=0;const bubbleContext=new Proxy({globalAlpha:alpha,beginPath(){paths++},fill(){fills++}},{get(o,k){return k in o?o[k]:(...args)=>{for(const n of args)if(typeof n==='number')assert(Number.isFinite(n))}}});
+ originalBubble(bubbleContext,530,55,335,48,'#efb3d0',side,18,8);
+ assert.equal(paths,1);assert.equal(fills,1);assert.equal(bubbleContext.globalAlpha,alpha);
+}
+console.log('PASS: left/right speech bubbles use a single filled silhouette at full and fading opacity.');
