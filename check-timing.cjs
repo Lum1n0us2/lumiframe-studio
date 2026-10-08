@@ -9,14 +9,14 @@ const c=new Proxy({globalAlpha:1,save(){stack.push(this.globalAlpha)},restore(){
 sandbox.c=c;sandbox.state={duration:8,bg:'#fffafb',accent:'#efb3d0',reply:'#9cd8eb',float:false,sparkles:false,hearts:false,card:true,zoom:1,position:.5,switch:true,quote:'첫 줄\n둘째 줄\n셋째 줄',messages:'안녕\n반가워',pair:'이름',handle:'@pair',song:'노래',artist:'가수',chat:true};sandbox.imgs={main:{width:480,height:750}};sandbox.playing=true;
 const originalBubble=sandbox.speechBubble;sandbox.speechBubble=(c,x,y,...args)=>{draws.push({x,y,a:c.globalAlpha});return originalBubble(c,x,y,...args)};
 const positions=[[530,55],[100,138],[515,429],[615,522],[718,206],[981,720]];
-const starts=[0,2,6,9,12,24],fades=[4,5,4,5,6,8];
-for(const duration of [6,8,12]){sandbox.state.duration=duration;for(let frame=0;frame<duration*20;frame++){draws.length=0;sandbox.t=frame/20;vm.runInContext('render(c,t)',sandbox);assert.equal(stack.length,0);positions.forEach(([x,y],i)=>{const calls=draws.filter(d=>d.x===x&&d.y===y);assert(calls.length);const alpha=Math.max(...calls.map(d=>d.a));if(frame<=starts[i])assert.equal(alpha,0,`layer ${i} appeared early at frame ${frame}`);else if(frame<duration*20-9){assert(alpha>0,`layer ${i} missing at frame ${frame}`);if(frame>=starts[i]+fades[i])assert(alpha>.99)}});assert.equal(c.globalAlpha,1)}}
+const starts=[0,2,6,9,12,26],fades=[4,5,4,5,6,5];
+for(const duration of [6,8,12]){sandbox.state.duration=duration;for(let frame=0;frame<duration*20;frame++){draws.length=0;sandbox.t=frame/20;vm.runInContext('render(c,t)',sandbox);assert.equal(stack.length,0);positions.forEach(([x,y],i)=>{const calls=draws.filter(d=>d.x===x&&d.y===y);assert(calls.length);const alpha=Math.max(...calls.map(d=>d.a));if(frame<=starts[i])assert.equal(alpha,0,`layer ${i} appeared early at frame ${frame}`);else if(frame<duration*20-(i===5?10:9)){assert(alpha>0,`layer ${i} missing at frame ${frame}`);if(frame>=starts[i]+fades[i])assert(alpha>.99)}});assert.equal(c.globalAlpha,1)}}
 assert.equal(vm.runInContext('GIF_FPS',sandbox),20);
 assert(source.includes('const count=state.duration*GIF_FPS;'));
 assert(source.includes('render(g,i/GIF_FPS);'));
 assert(source.includes('[33,249,4,0,100/GIF_FPS,0,0,0,44,'));
 assert(source.includes('duration:6'));
-console.log('PASS: reference entrance frames 1/3/7/10/13/25; every frame checked for 6/8/12-second loops. Default export: 120 frames, 50ms per frame, 6 seconds.');
+console.log('PASS: reference entrance frames 1/3/7/10/13/27; every frame checked for 6/8/12-second loops. Default export: 120 frames, 50ms per frame, 6 seconds.');
 // Match the reference's message phases, including deterministic scrubbing/export.
 sandbox.state.duration=6;sandbox.lines=['받은 메시지','이것은 한 글자씩 입력되는 답장입니다'];
 const chat=t=>{sandbox.t=t;return vm.runInContext('messageFrame(lines,t)',sandbox)};
@@ -65,3 +65,10 @@ for(const side of ['left','right'])for(const alpha of [1,.5,.1]){
  assert.equal(paths,1);assert.equal(fills,1);assert.equal(bubbleContext.globalAlpha,alpha);
 }
 console.log('PASS: left/right speech bubbles use a single filled silhouette at full and fading opacity.');
+
+sandbox.state.duration=6;
+const phone=t=>sandbox.layerProgress(t,'phoneMusic');
+assert.equal(phone(1.3).alpha,0);assert(phone(1.4).scaleX<phone(1.55).scaleX);
+assert.equal(phone(1.55).alpha,1);assert.equal(phone(1.55).contentAlpha,0);assert.equal(phone(1.8).contentAlpha,1);
+assert.equal(phone(5.5).scaleX,1);assert(phone(5.6).scaleX<phone(5.5).scaleX);assert.equal(phone(5.75).alpha,0);
+console.log('PASS: phone capsule expands on frames 26–31, reveals content on 31–36, and shrinks away on 110–115.');
