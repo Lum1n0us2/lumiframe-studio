@@ -10,7 +10,7 @@ sandbox.c=c;sandbox.state={duration:8,bg:'#fffafb',accent:'#efb3d0',reply:'#9cd8
 const originalBubble=sandbox.speechBubble;sandbox.speechBubble=(c,x,y,...args)=>{draws.push({x,y,a:c.globalAlpha});return originalBubble(c,x,y,...args)};
 const positions=[[530,55],[100,138],[515,429],[615,522],[718,206],[981,720]];
 const starts=[0,2,6,9,12,26],fades=[4,5,4,5,6,5];
-for(const duration of [6,8,12]){sandbox.state.duration=duration;for(let frame=0;frame<duration*20;frame++){draws.length=0;sandbox.t=frame/20;vm.runInContext('render(c,t)',sandbox);assert.equal(stack.length,0);positions.forEach(([x,y],i)=>{const calls=draws.filter(d=>d.x===x&&d.y===y);assert(calls.length);const alpha=Math.max(...calls.map(d=>d.a));if(frame<=starts[i])assert.equal(alpha,0,`layer ${i} appeared early at frame ${frame}`);else if(frame<duration*20-(i===5?10:9)){assert(alpha>0,`layer ${i} missing at frame ${frame}`);if(frame>=starts[i]+fades[i])assert(alpha>.99)}});assert.equal(c.globalAlpha,1)}}
+for(const duration of [6,8,12]){sandbox.state.duration=duration;for(let frame=0;frame<duration*20;frame++){draws.length=0;sandbox.t=frame/20;vm.runInContext('render(c,t)',sandbox);assert.equal(stack.length,0);positions.forEach(([x,y],i)=>{const calls=draws.filter(d=>d.x===x&&d.y===y);assert(calls.length);const alpha=Math.max(...calls.map(d=>d.a));if(frame<=starts[i])assert.equal(alpha,0,`layer ${i} appeared early at frame ${frame}`);else if(frame<duration*20-[5,3,7,6,9,10][i]){assert(alpha>0,`layer ${i} missing at frame ${frame}`);if(frame>=starts[i]+fades[i])assert(alpha>.99)}});assert.equal(c.globalAlpha,1)}}
 assert.equal(vm.runInContext('GIF_FPS',sandbox),20);
 assert(source.includes('const count=state.duration*GIF_FPS;'));
 assert(source.includes('render(g,i/GIF_FPS);'));
@@ -86,3 +86,12 @@ assert(chat(1.96).typingOpacity<chat(1.7).typingOpacity);
 const inFlight=chat(3.95).items[1];assert(inFlight.progress<1);assert(sandbox.playerPop(inFlight.progress)>1);
 assert.equal(chat(4.1).items[1].progress,1);assert.equal(chat(3.8).draft,'');
 console.log('PASS: typing indicator fades, completed draft holds before sending, and the reply overshoots then settles.');
+
+for(const duration of [6,8,12]){
+ sandbox.state.duration=duration;const ordered=['phoneMusic','music','name','messages','quote','main'],begins=[];
+ for(const layer of ordered){let first=-1,lastAlpha=1;for(let f=duration*20-15;f<=duration*20;f++){const a=sandbox.layerProgress(f/20,layer).alpha;if(a<.999&&first<0)first=f;assert(a<=lastAlpha+1e-8);lastAlpha=a}begins.push(first);assert.equal(lastAlpha,0)}
+ assert(begins.every((frame,i)=>i===0||frame>begins[i-1]),`Exit order at ${duration}s: ${begins}`);
+ assert.equal(sandbox.layerProgress((duration*20-4)/20,'music').alpha,0);
+ assert.equal(sandbox.layerProgress((duration*20-4)/20,'main').alpha,1);
+}
+console.log('PASS: phone music → music → name → messages → quote → main exit independently in every loop duration.');
