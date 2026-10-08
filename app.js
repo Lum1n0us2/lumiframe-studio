@@ -62,6 +62,23 @@ function drawMainImage(c,im,yOffset){
  c.save();if(state.card){rr(c,b.x,b.y,b.width,b.height,Math.min(35*state.zoom,b.width/2,b.height/2));c.clip()}
  c.drawImage(im,b.x,b.y,b.width,b.height);c.restore();
 }
+function drawPhoneStatus(c,x,y,w){
+ c.save();c.fillStyle='#fff';c.strokeStyle='#fff';c.lineCap='round';c.lineJoin='round';
+ c.shadowColor='#00000065';c.shadowBlur=3;
+ text(c,'9:41',x+29,y+40,16,'#fff','left',700);
+ // Four cellular bars share a baseline and increase in height.
+ for(let i=0;i<4;i++){const height=4+i*3;rr(c,x+w-109+i*5,y+40-height,3.5,height,1,'#fff')}
+ // Wi-Fi arcs and dot; these remain crisp in PNG/GIF exports.
+ const wifiX=x+w-77,wifiY=y+39;c.lineWidth=2.1;
+ for(const radius of [9,5.7]){c.beginPath();c.arc(wifiX,wifiY,radius,Math.PI*1.23,Math.PI*1.77);c.stroke()}
+ c.beginPath();c.arc(wifiX,wifiY-1,1.5,0,Math.PI*2);c.fill();
+ // Battery outline, terminal and an inset charge indicator.
+ const batteryX=x+w-57,batteryY=y+27;c.lineWidth=1.4;
+ rr(c,batteryX,batteryY,27,13,3,null,'#ffffffdd');
+ rr(c,batteryX+3,batteryY+3,18,7,1.4,'#fff');
+ rr(c,batteryX+28.5,batteryY+4,2.5,5,1.2,'#ffffffcc');
+ c.restore();
+}
 function glass(c,x,y,w,h,r,opacity=.82,tint='name'){
  c.save();c.shadowColor='#22132d20';c.shadowBlur=28;c.shadowOffsetY=10;rr(c,x,y,w,h,r,`rgba(255,255,255,${opacity})`);c.restore();
  if(tint==='none'){rr(c,x,y,w,h,r,null,'#ffffff80');return}
@@ -173,7 +190,7 @@ function render(c,t){const w=1416,h=984,dark=parseInt(state.bg.slice(1,3),16)<10
  beginLayer(c,t,'main');const mainY=state.float?Math.sin(t*.8)*4:0;
  drawMainImage(c,imgs.main,mainY);endLayer(c);
  const fy=state.float?Math.sin(t*1.1)*7:0;const px=958,py=136+fy,pw=354,ph=752;
- c.save();c.shadowColor='#00000040';c.shadowBlur=17;c.shadowOffsetY=7;rr(c,px,py,pw,ph,53,'#1a191c','#8c8a8e');c.restore();photo(c,imgs.a,px+9,py+9,pw-18,ph-18,45);if(state.switch){const alpha=Math.min(1,Math.max(0,Math.sin(phase*Math.PI)*6-1.8));c.save();c.globalAlpha=alpha;photo(c,imgs.b,px+9,py+9,pw-18,ph-18,45);c.restore()}rr(c,px+126,py+20,106,25,20,'#030305');text(c,'9:41',px+29,py+40,16,'#fff','left',700);text(c,'▴ ▰',px+pw-57,py+40,16);const shade=c.createLinearGradient(0,py+400,0,py+ph);shade.addColorStop(0,'#00000000');shade.addColorStop(1,'#00000050');rr(c,px+9,py+9,pw-18,ph-18,45,shade);
+ c.save();c.shadowColor='#00000040';c.shadowBlur=17;c.shadowOffsetY=7;rr(c,px,py,pw,ph,53,'#1a191c','#8c8a8e');c.restore();photo(c,imgs.a,px+9,py+9,pw-18,ph-18,45);if(state.switch){const alpha=Math.min(1,Math.max(0,Math.sin(phase*Math.PI)*6-1.8));c.save();c.globalAlpha=alpha;photo(c,imgs.b,px+9,py+9,pw-18,ph-18,45);c.restore()}rr(c,px+126,py+20,106,25,20,'#030305');drawPhoneStatus(c,px,py,pw);const shade=c.createLinearGradient(0,py+400,0,py+ph);shade.addColorStop(0,'#00000000');shade.addColorStop(1,'#00000050');rr(c,px+9,py+9,pw-18,ph-18,45,shade);
  const phoneMotion=beginPhoneMusic(c,t,px,py,pw,ph);glass(c,px+23,py+ph-168,pw-46,75,20,dark?.19:.73,'none');c.save();c.globalAlpha*=phoneMotion.contentAlpha;photo(c,imgs.cover,px+34,py+ph-157,53,53,10);const phoneMusicCenterY=py+ph-168+75/2;c.save();c.textBaseline='middle';text(c,state.song.slice(0,21),px+99,phoneMusicCenterY-9,14,dark?'#fff':'#493c4a','left',600);text(c,state.artist.slice(0,25),px+99,phoneMusicCenterY+10,11,dark?'#ddd':'#8b7c89');c.restore();for(let i=0;i<5;i++){const sh=8+Math.abs(Math.sin(t*3+i))*12;rr(c,px+pw-67+i*5,py+ph-131-sh/2,3,sh,2,state.reply)}c.restore();endLayer(c);rr(c,px+118,py+ph-23,120,4,3,'#ffffffbb');
  beginLayer(c,t,'quote');const qy=55+(state.float?Math.sin(t+1)*5:0),quoteLines=textLines(c,state.quote,290,18),quoteHeight=48+(quoteLines.length-1)*27;speechBubble(c,530,qy,335,quoteHeight,state.accent,'left',18,8);drawLines(c,quoteLines,554,qy+30,18,dark?'#fff':'#655463');endLayer(c);
  beginLayer(c,t,'messages');const cy=522;messageWindow(c,615,cy,295,390);text(c,'＋',628,cy+72,29,'#8c8291');for(let i=0;i<6;i++)photo(c,imgs[`chat${i+1}`],626,cy+95+i*43,29,29,15);text(c,'MESSAGES',680,cy+52,10,'#aaa0ad');text(c,'⌕ ⋮',860,cy+52,17,'#9e94a0');c.fillStyle='#ded6de';c.fillRect(672,cy+68,222,1);
