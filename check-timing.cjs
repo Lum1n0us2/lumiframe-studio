@@ -99,4 +99,11 @@ const tintDirections=[];const tintContext=new Proxy({createLinearGradient(...poi
 sandbox.glass(tintContext,10,20,100,60,12,.7,'none');assert.equal(tintDirections.length,0);
 sandbox.glass(tintContext,10,20,100,60,12,.7,'name');assert.deepEqual(tintDirections.pop(),[110,20,10,80]);
 sandbox.glass(tintContext,10,20,100,60,12,.7,'messages');assert.deepEqual(tintDirections.pop(),[10,80,110,20]);
-console.log('PASS: phone player has no tint gradient; name and message cards use opposing diagonals.');
+console.log('PASS: phone player has no tint gradient; name card gradient direction is preserved.');
+
+const windowPaths=[],windowFills=[];let activePath=[];
+const windowContext=new Proxy({beginPath(){activePath=[]},roundRect(...args){activePath.push(args)},fill(rule){windowFills.push({rule,paths:activePath.slice(),paint:this.fillStyle})},createLinearGradient(){return {kind:'tint',addColorStop(){}}}},{get(o,k){return k in o?o[k]:()=>{}}});
+sandbox.messageWindow(windowContext,615,522,295,390);
+const colored=windowFills.filter(f=>f.paint?.kind==='tint');assert.equal(colored.length,1);assert.equal(colored[0].rule,'evenodd');
+assert.deepEqual(colored[0].paths,[[615,522,295,390,26],[660,546,246,361,18]]);
+console.log('PASS: message gradient fills only the outer frame and excludes the neutral conversation interior.');
