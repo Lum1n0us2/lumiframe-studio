@@ -28,7 +28,7 @@ assert(chat(2.6).draft.length>0);assert(chat(3.4).draft.length>chat(2.6).draft.l
 assert.equal(chat(3.7).items.length,1);
 assert.equal(chat(3.8).items.length,2);assert.equal(chat(3.8).draft,'');
 assert(chat(3.8).items[1].progress>0&&chat(3.8).items[1].progress<1);
-assert.equal(chat(4).items[1].progress,1);
+assert.equal(chat(4.1).items[1].progress,1);
 assert.equal(chat(0).items.length,0);
 assert.equal(vm.runInContext('messageFrame(lines,0,false).items.length',sandbox),2);
 sandbox.lines=['1','2','3','4','5'];assert.equal(chat(5.5).items.length,5);
@@ -79,3 +79,10 @@ assert(musicScales[0]<1&&Math.max(...musicScales)>1.03);assert.equal(musicScales
 assert(phoneScales[0]<1&&Math.max(...phoneScales)>1.06);assert.equal(phoneScales.at(-1),1);
 assert(Math.max(...musicScales)>musicScales.at(-1));assert(Math.max(...phoneScales)>phoneScales.at(-1));
 console.log('PASS: both players overshoot their final size and settle back to exactly 100%.');
+
+sandbox.state.duration=6;sandbox.lines=['받은 메시지','입력 중인 답장'];
+assert.equal(chat(3.5).draft,'입력 중인 답장');assert.equal(chat(3.7).draft,'입력 중인 답장');
+assert(chat(1.96).typingOpacity<chat(1.7).typingOpacity);
+const inFlight=chat(3.95).items[1];assert(inFlight.progress<1);assert(sandbox.playerPop(inFlight.progress)>1);
+assert.equal(chat(4.1).items[1].progress,1);assert.equal(chat(3.8).draft,'');
+console.log('PASS: typing indicator fades, completed draft holds before sending, and the reply overshoots then settles.');
