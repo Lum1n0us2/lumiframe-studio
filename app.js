@@ -3,11 +3,12 @@ const presets=[
  {name:'분홍빛 설렘',en:'PINK DAYDREAM',bg:'#fffafb',accent:'#efb3d0',reply:'#9cd8eb',pair:'Pair Name',handle:'@ID',quote:'Sample Text',song:'Song Title',artist:'Artist'}
 ];
 const backgroundDefaults={bgMode:'solid',bgEnd:'#b49bc9',bgDirection:'down',bgStart:60};
-let state={...backgroundDefaults,theme:3,...presets[0],messages:'Text1\nText2\nText3',zoom:1,position:.5,card:false,sparkles:true,hearts:true,float:true,chat:true,switch:true,duration:6};
+const effectDefaults={particles:true,circles:true,feathers:false};
+let state={...backgroundDefaults,...effectDefaults,theme:3,...presets[0],messages:'Text1\nText2\nText3',zoom:1,position:.5,card:false,sparkles:true,hearts:true,float:true,chat:true,switch:true,duration:6};
 let musicRequest=0;
 let sources={},imgs={},playing=true,elapsed=0,last=performance.now(),exporting=false,audio=new Audio();
 const canvas=$('canvas'),ctx=canvas.getContext('2d');
-const keys=['bgMode','bgEnd','bgDirection','bgStart','bg','accent','reply','pair','handle','quote','messages','song','artist','zoom','position','card','sparkles','hearts','float','chat','switch','duration'];
+const keys=['bgMode','bgEnd','bgDirection','bgStart','bg','accent','reply','pair','handle','quote','messages','song','artist','zoom','position','card','sparkles','hearts','particles','circles','feathers','float','chat','switch','duration'];
 const slots=[['main','메인 일러스트','왼쪽의 큰 이미지'],['a','스마트폰 · A','첫 번째 화면'],['b','스마트폰 · B','두 번째 화면'],['cover','앨범 커버','음악 위젯의 작은 이미지'],['profile','프로필 이미지','이름 카드의 원형 프로필'],...Array.from({length:6},(_,i)=>[`chat${i+1}`,`메시지 프로필 ${i+1}`,`메시지 창 왼쪽 · 위에서 ${i+1}번째`])];
 function completeAssets(assets){return Object.fromEntries(slots.map(([k])=>[k,assets[k]??null]))}
 function toast(s){$('toast').textContent=s;$('toast').classList.add('show');setTimeout(()=>$('toast').classList.remove('show'),2600)}
@@ -84,8 +85,36 @@ function drawBackground(c,w,h){
  gradient.addColorStop(0,state.bg);gradient.addColorStop(state.bgStart/100,state.bg);gradient.addColorStop(1,state.bgEnd);
  c.fillStyle=gradient;c.fillRect(0,0,w,h);
 }
+// Stable seeded positions: seeking and GIF export reproduce the same particles.
+function effectSeed(i,salt){const n=Math.sin(i*127.1+salt*311.7)*43758.5453;return n-Math.floor(n)}
+function drawAtmosphere(c,t,w,h,dark){
+ const phase=t/state.duration,turn=phase*Math.PI*2,color=dark?'#ffffff':'#b69bb4';
+ if(state.particles)for(let i=0;i<105;i++){
+  const x=effectSeed(i,1)*w+Math.sin(turn+i)*5,y=effectSeed(i,2)*h+Math.cos(turn+i)*5;
+  c.save();c.globalAlpha=.12+.35*(.5+.5*Math.sin(turn*2+i));c.fillStyle=color;c.beginPath();c.arc(x,y,.7+effectSeed(i,3)*1.8,0,Math.PI*2);c.fill();c.restore();
+ }
+ if(state.sparkles)for(let i=0;i<27;i++)star(c,effectSeed(i,4)*w,effectSeed(i,5)*h,3+effectSeed(i,6)*9,.15+.65*(.5+.5*Math.sin(turn*2+i)),dark?'#ffffff':'#d8b9cf');
+ if(state.hearts)for(let i=0;i<25;i++){
+  const x=effectSeed(i,7)*w+Math.sin(turn+i)*8,y=effectSeed(i,8)*h+Math.cos(turn+i)*6,size=8+effectSeed(i,9)*13;
+  c.save();c.translate(x,y);c.rotate(Math.sin(turn+i)*.2);c.scale(size,size);c.globalAlpha=.12+.36*(.5+.5*Math.sin(turn*2+i*1.8));c.strokeStyle=dark?'#ffffff':state.accent;c.lineWidth=.09;
+  c.beginPath();c.moveTo(0,.8);c.bezierCurveTo(-1.6,-.1,-.9,-1.25,0,-.55);c.bezierCurveTo(.9,-1.25,1.6,-.1,0,.8);c.stroke();c.restore();
+ }
+ if(state.circles)for(let i=0;i<16;i++){
+  const x=effectSeed(i,10)*w+Math.sin(turn+i)*15,y=effectSeed(i,11)*h+Math.cos(turn+i)*12,r=7+effectSeed(i,12)*22;
+  c.save();c.globalAlpha=.10+.16*(.5+.5*Math.sin(turn+i));c.lineWidth=1.5;c.strokeStyle=color;c.fillStyle=dark?'#ffffff16':'#b69bb410';c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.fill();c.stroke();c.beginPath();c.arc(x-r*.16,y-r*.16,r*.7,Math.PI,Math.PI*1.4);c.stroke();c.restore();
+ }
+ if(state.feathers)for(let i=0;i<11;i++){
+  const travel=(phase+effectSeed(i,13))%1,y=travel*(h+160)-80,x=effectSeed(i,14)*w+Math.sin(travel*Math.PI*2+i)*65,size=22+effectSeed(i,15)*28;
+  c.save();c.translate(x,y);c.rotate(-.65+Math.sin(travel*Math.PI*2+i)*.65);c.scale(size,size);
+  c.globalAlpha=.6*Math.min(1,travel*12,(1-travel)*12);c.fillStyle=dark?'#ffffffc9':'#ffffffde';c.strokeStyle=dark?'#e5dceeb0':'#b8a3bc99';c.lineWidth=.025;
+  c.beginPath();c.moveTo(0,-1);c.bezierCurveTo(.65,-.9,.65,.2,0,.95);c.bezierCurveTo(-.5,.5,-.55,-.45,0,-1);c.fill();c.stroke();
+  c.beginPath();c.moveTo(0,-.88);c.quadraticCurveTo(.06,.2,-.18,1.25);c.stroke();
+  for(let j=0;j<7;j++){const y=-.7+j*.22,width=.35*Math.sin((j+1)/9*Math.PI);c.beginPath();c.moveTo(0,y+.17);c.quadraticCurveTo(-width*.55,y+.1,-width,y-.1);c.moveTo(0,y+.17);c.quadraticCurveTo(width*.55,y+.02,width,y-.2);c.stroke()}
+  c.restore();
+ }
+}
 function render(c,t){const w=1416,h=984,dark=parseInt(state.bg.slice(1,3),16)<100;const phase=t/state.duration,trackLength=state.trackDuration||state.duration,trackPosition=Math.min(trackLength,Math.max(0,c===ctx&&!exporting&&audio.src?audio.currentTime||0:t));c.clearRect(0,0,w,h);drawBackground(c,w,h);
- if(state.sparkles)for(let i=0;i<150;i++){const x=(i*733.17)%w,y=(i*397.39)%h;const a=(Math.sin(t*1.3+i*7)+1)*.25+.1;star(c,x,y,i%12===0?10:2.5,a,dark?'#fff':'#cbb5c9')}
+
  beginLayer(c,t,'main');const mainY=state.float?Math.sin(t*.8)*4:0;
  drawMainImage(c,imgs.main,mainY);endLayer(c);
  const fy=state.float?Math.sin(t*1.1)*7:0;const px=958,py=136+fy,pw=354,ph=752;
@@ -103,8 +132,7 @@ function render(c,t){const w=1416,h=984,dark=parseInt(state.bg.slice(1,3),16)<10
  if(conversation.draft){c.font='400 11px "Noto Sans KR",sans-serif';const width=c.measureText(conversation.draft).width,x=687-Math.max(0,width-158);text(c,conversation.draft,x,cy+368,11,'#7a6c78');if(Math.floor(t*3)%2===0){c.fillStyle=state.reply;c.fillRect(x+width+2,cy+357,1.5,13)}}else text(c,'iMessage',687,cy+368,11,'#c0b3bf');c.restore();rr(c,874,cy+352,22,22,11,state.reply);text(c,'↑',885,cy+369,18,'white','center');endLayer(c);
  beginLayer(c,t,'name');const vy=429+(state.float?Math.cos(t)*5:0);glass(c,515,vy,248,143,25,.63);['#dfb2c1','#acd5d7','#b9a9cf'].forEach((co,i)=>rr(c,531+i*15,vy+15,8,8,4,co));photo(c,imgs.profile,612,vy+27,54,54,28);c.strokeStyle='#fff';c.lineWidth=3;c.beginPath();c.arc(639,vy+54,28,0,Math.PI*2);c.stroke();rr(c,525,vy+93,229,38,18,'#ffffff80','#ffffffa0');text(c,state.pair.slice(0,21),639,vy+110,14,'#655762','center',600);text(c,state.handle.slice(0,27),639,vy+124,9,'#a292a1','center');endLayer(c);
  beginLayer(c,t,'music');const my=206+(state.float?Math.sin(t+2)*7:0);c.save();c.shadowBlur=26;c.shadowColor='#30223930';rr(c,718,my,313,248,27,'#323035ed');c.restore();photo(c,imgs.cover,736,my+19,81,81,11);text(c,state.song.slice(0,19),833,my+50,18,'#fff','left',600);text(c,state.artist.slice(0,25),833,my+73,12,'#beb8c2');rr(c,736,my+123,276,4,2,'#ffffff30');rr(c,736,my+123,276*(trackPosition/trackLength),4,2,'#f0ebef');text(c,musicTime(trackPosition),736,my+146,10,'#d1c9d1');text(c,'−'+musicTime(Math.ceil(trackLength-trackPosition)),983,my+146,10,'#d1c9d1');text(c,'◀◀',780,my+186,21);text(c,playing?'Ⅱ':'▶',874,my+187,30,'#fff','center',700);text(c,'▶▶',942,my+186,21);text(c,'◖',737,my+223,18,'#b2aab4');rr(c,770,my+215,210,4,2,'#ffffff30');rr(c,770,my+215,73,4,2,'#ddd6df');text(c,'◗',991,my+223,18,'#b2aab4');endLayer(c);
- if(state.hearts)for(let i=0;i<15;i++){let x=(i*191.5+53)%w,y=(h-((t*27+i*77)%h));c.save();c.globalAlpha=.12+((i*7)%4)*.055;text(c,i%3===0?'✧':'♡',x,y,19+i%4*4,dark?'#fff':state.accent);c.restore()}
- if(state.sparkles)for(let i=0;i<9;i++)star(c,100+i*153,(i*149+250)%h,8+Math.sin(t*2+i)*4,.6,dark?'#fff':'#fff');
+ drawAtmosphere(c,t,w,h,dark);
 }
 function tick(now){if(playing&&!exporting)elapsed=(elapsed+(now-last)/1000)%state.duration;last=now;render(ctx,elapsed);$('seek').value=elapsed;$('time').textContent=`00:${String(Math.floor(elapsed)).padStart(2,'0')}`;requestAnimationFrame(tick)}
 function setPlay(v){playing=v;$('play').textContent=v?'Ⅱ':'▶';$('play').setAttribute('aria-label',v?'일시정지':'재생');if(v&&audio.src)audio.play().catch(()=>toast('음악을 재생할 수 없어요.'));else audio.pause()}
@@ -128,13 +156,13 @@ $('audioFile').onchange=async e=>{
 };
 $('fullscreen').onclick=()=>{if(document.fullscreenElement)document.exitFullscreen();else document.querySelector('.canvas-wrap').requestFullscreen().catch(()=>toast('전체 화면을 지원하지 않는 브라우저예요.'))};
 $('referenceGradient').onclick=()=>{Object.assign(state,{bgMode:'gradient',bg:'#050508',bgEnd:'#b49bc9',bgDirection:'down',bgStart:60});sync();setAssets();toast('원본 GIF처럼 아래쪽으로 번지는 배경을 적용했어요.')};
-$('reset').onclick=()=>{state={...state,zoom:1,position:.5,card:true,sparkles:true,hearts:true,float:true,chat:true,switch:true,duration:6};sync();elapsed=0;toast('효과를 초기화했어요.')};
+$('reset').onclick=()=>{state={...state,zoom:1,position:.5,card:true,sparkles:true,hearts:true,...effectDefaults,float:true,chat:true,switch:true,duration:6};sync();elapsed=0;toast('효과를 초기화했어요.')};
 
 $('exportTop').onclick=()=>$('exportDialog').showModal();document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>$(b.dataset.close).close());
 function download(blob,name){const a=document.createElement('a'),url=URL.createObjectURL(blob);a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),30000)}
 $('png').onclick=()=>{render(ctx,elapsed);canvas.toBlob(b=>{if(b){download(b,'lumi-pair.png');$('exportStatus').textContent='PNG 이미지를 저장했어요.'}},'image/png')};
 $('saveProject').onclick=async()=>{const assets={};for(const [k,im] of Object.entries(imgs)){if(im.isPlaceholder){assets[k]=null;continue}const c=document.createElement('canvas');c.width=im.naturalWidth;c.height=im.naturalHeight;c.getContext('2d').drawImage(im,0,0);assets[k]=c.toDataURL('image/png')}download(new Blob([JSON.stringify({version:2,state,assets})],{type:'application/json'}),'lumi-project.json');toast('프로젝트를 저장했어요. 음악 파일은 별도 보관해주세요.')};
-$('loadProject').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const p=JSON.parse(await f.text());if(![1,2].includes(p.version)||!p.state||!p.assets)throw Error();const next={...state};for(const k of keys){const v=p.state[k]??backgroundDefaults[k];if(typeof v!==typeof state[k])throw Error();next[k]=v}if(![1,2,3,4,5].includes(p.state.theme)||![6,8,12].includes(next.duration)||!Number.isFinite(next.zoom)||next.zoom<.25||next.zoom>3||next.position<0||next.position>1)throw Error();if(!['solid','gradient'].includes(next.bgMode)||!['down','up','right','left','diagonal'].includes(next.bgDirection)||!Number.isFinite(next.bgStart)||next.bgStart<0||next.bgStart>90)throw Error();for(const k of ['bg','bgEnd','accent','reply'])if(!/^#[0-9a-f]{6}$/i.test(next[k]))throw Error();const importedAssets=completeAssets(p.assets);for(const [k] of slots)if(importedAssets[k]!==null&&(typeof importedAssets[k]!=='string'||!importedAssets[k].startsWith('data:image/')))throw Error();const pairs=await Promise.all(slots.map(async([k])=>[k,importedAssets[k]===null?null:await loadImage(importedAssets[k])]));musicRequest++;audio.pause();if(audio.src)URL.revokeObjectURL(audio.src);audio=new Audio();next.trackDuration=Number.isFinite(p.state.trackDuration)&&p.state.trackDuration>0?p.state.trackDuration:0;$('audioName').textContent='프로젝트의 음악 정보가 복원됐어요. 재생하려면 음악 파일을 다시 선택해주세요.';state={...next,theme:p.state.theme};imgs=Object.fromEntries(pairs.map(([k,im])=>[k,im||placeholder(k)]));sources=Object.fromEntries(slots.map(([k])=>[k,importedAssets[k]]));sync();updateUploads();elapsed=0;toast('프로젝트를 불러왔어요.')}catch{toast('올바른 LUMI 프로젝트 파일을 선택해주세요.')}e.target.value=''};
+$('loadProject').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const p=JSON.parse(await f.text());if(![1,2].includes(p.version)||!p.state||!p.assets)throw Error();const next={...state};for(const k of keys){const v=p.state[k]??backgroundDefaults[k]??effectDefaults[k];if(typeof v!==typeof state[k])throw Error();next[k]=v}if(![1,2,3,4,5].includes(p.state.theme)||![6,8,12].includes(next.duration)||!Number.isFinite(next.zoom)||next.zoom<.25||next.zoom>3||next.position<0||next.position>1)throw Error();if(!['solid','gradient'].includes(next.bgMode)||!['down','up','right','left','diagonal'].includes(next.bgDirection)||!Number.isFinite(next.bgStart)||next.bgStart<0||next.bgStart>90)throw Error();for(const k of ['bg','bgEnd','accent','reply'])if(!/^#[0-9a-f]{6}$/i.test(next[k]))throw Error();const importedAssets=completeAssets(p.assets);for(const [k] of slots)if(importedAssets[k]!==null&&(typeof importedAssets[k]!=='string'||!importedAssets[k].startsWith('data:image/')))throw Error();const pairs=await Promise.all(slots.map(async([k])=>[k,importedAssets[k]===null?null:await loadImage(importedAssets[k])]));musicRequest++;audio.pause();if(audio.src)URL.revokeObjectURL(audio.src);audio=new Audio();next.trackDuration=Number.isFinite(p.state.trackDuration)&&p.state.trackDuration>0?p.state.trackDuration:0;$('audioName').textContent='프로젝트의 음악 정보가 복원됐어요. 재생하려면 음악 파일을 다시 선택해주세요.';state={...next,theme:p.state.theme};imgs=Object.fromEntries(pairs.map(([k,im])=>[k,im||placeholder(k)]));sources=Object.fromEntries(slots.map(([k])=>[k,importedAssets[k]]));sync();updateUploads();elapsed=0;toast('프로젝트를 불러왔어요.')}catch{toast('올바른 LUMI 프로젝트 파일을 선택해주세요.')}e.target.value=''};
 // GIF89a encoder: adaptive median-cut palette, cached nearest colors and LZW.
 let gifPalette=[],gifLookup;
 function makePalette(frames){
