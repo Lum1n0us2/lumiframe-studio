@@ -69,6 +69,7 @@ function star(c,x,y,r,a,color){c.save();c.globalAlpha=a;c.fillStyle=color;c.begi
 // Reference 1.gif: 120 frames, 50 ms per frame (6 seconds at 20 FPS).
 const GIF_FPS=20;
 const entranceFrames={quote:[0,4],main:[2,5],name:[6,4],messages:[9,5],music:[12,6],phoneMusic:[26,5]};
+function playerPop(progress){const p=Math.max(0,Math.min(1,progress))-1;return 1+2.70158*p*p*p+1.70158*p*p}
 function layerProgress(t,layer){
  const [start,fade]=entranceFrames[layer],frame=t*GIF_FPS;
  const progress=Math.max(0,Math.min(1,(frame-start)/fade));
@@ -76,13 +77,18 @@ function layerProgress(t,layer){
  if(layer==='phoneMusic'){
   const exit=Math.max(0,Math.min(1,(frame-(state.duration*GIF_FPS-10))/5)),collapse=exit*exit*(3-2*exit);
   const content=Math.max(0,Math.min(1,(frame-31)/5));
-  return {alpha:ease*(1-collapse),offset:-10*(1-ease),scaleX:(.12+.88*ease)*(1-.9*collapse),scaleY:(.4+.6*ease)*(1-.75*collapse),contentAlpha:content*content*(3-2*content)};
+  const pop=playerPop((frame-start)/8);
+  return {alpha:ease*(1-collapse),offset:-10*(1-ease),scaleX:(.12+.88*pop)*(1-.9*collapse),scaleY:(.4+.6*pop)*(1-.75*collapse),contentAlpha:content*content*(3-2*content)};
  }
  const outro=Math.max(0,Math.min(1,(state.duration-t)/.45));
- return {alpha:ease*outro,offset:18*(1-ease)};
+ return {alpha:ease*outro,offset:18*(1-ease),scale:layer==='music'?.55+.45*playerPop((frame-start)/8):1};
 }
 function beginLayer(c,t,layer){const p=layerProgress(t,layer);c.save();c.globalAlpha*=p.alpha;c.translate(0,p.offset)}
 function endLayer(c){c.restore()}
+function beginMusic(c,t,y){
+ const p=layerProgress(t,'music'),cx=718+313/2,cy=y+248/2;
+ c.save();c.globalAlpha*=p.alpha;c.translate(cx,cy+p.offset);c.scale(p.scale,p.scale);c.translate(-cx,-cy);
+}
 function beginPhoneMusic(c,t,px,py,pw,ph){
  const p=layerProgress(t,'phoneMusic'),cx=px+pw/2,cy=py+ph-168+75/2;
  c.save();rr(c,px+9,py+9,pw-18,ph-18,45);c.clip();
@@ -162,7 +168,7 @@ function render(c,t){const w=1416,h=984,dark=parseInt(state.bg.slice(1,3),16)<10
  c.save();c.beginPath();c.rect(683,cy+350,173,26);c.clip();
  if(conversation.draft){c.font='400 11px "Noto Sans KR",sans-serif';const width=c.measureText(conversation.draft).width,x=687-Math.max(0,width-158);text(c,conversation.draft,x,cy+368,11,'#7a6c78');if(Math.floor(t*3)%2===0){c.fillStyle=state.reply;c.fillRect(x+width+2,cy+357,1.5,13)}}else text(c,'iMessage',687,cy+368,11,'#c0b3bf');c.restore();rr(c,874,cy+352,22,22,11,state.reply);text(c,'↑',885,cy+369,18,'white','center');endLayer(c);
  beginLayer(c,t,'name');const vy=429+(state.float?Math.cos(t)*5:0);glass(c,515,vy,248,143,25,.63);['#dfb2c1','#acd5d7','#b9a9cf'].forEach((co,i)=>rr(c,531+i*15,vy+15,8,8,4,co));photo(c,imgs.profile,612,vy+27,54,54,28);c.strokeStyle='#fff';c.lineWidth=3;c.beginPath();c.arc(639,vy+54,28,0,Math.PI*2);c.stroke();rr(c,525,vy+93,229,38,18,'#ffffff80','#ffffffa0');text(c,state.pair.slice(0,21),639,vy+110,14,'#655762','center',600);text(c,state.handle.slice(0,27),639,vy+124,9,'#a292a1','center');endLayer(c);
- beginLayer(c,t,'music');const my=206+(state.float?Math.sin(t+2)*7:0);c.save();c.shadowBlur=26;c.shadowColor='#30223930';rr(c,718,my,313,248,27,'#323035ed');c.restore();photo(c,imgs.cover,736,my+19,81,81,11);text(c,state.song.slice(0,19),833,my+50,18,'#fff','left',600);text(c,state.artist.slice(0,25),833,my+73,12,'#beb8c2');rr(c,736,my+123,276,4,2,'#ffffff30');rr(c,736,my+123,276*(trackPosition/trackLength),4,2,'#f0ebef');text(c,musicTime(trackPosition),736,my+146,10,'#d1c9d1');text(c,'−'+musicTime(Math.ceil(trackLength-trackPosition)),983,my+146,10,'#d1c9d1');text(c,'◀◀',780,my+186,21);text(c,playing?'Ⅱ':'▶',874,my+187,30,'#fff','center',700);text(c,'▶▶',942,my+186,21);text(c,'◖',737,my+223,18,'#b2aab4');rr(c,770,my+215,210,4,2,'#ffffff30');rr(c,770,my+215,73,4,2,'#ddd6df');text(c,'◗',991,my+223,18,'#b2aab4');endLayer(c);
+ const my=206+(state.float?Math.sin(t+2)*7:0);beginMusic(c,t,my);c.save();c.shadowBlur=26;c.shadowColor='#30223930';rr(c,718,my,313,248,27,'#323035ed');c.restore();photo(c,imgs.cover,736,my+19,81,81,11);text(c,state.song.slice(0,19),833,my+50,18,'#fff','left',600);text(c,state.artist.slice(0,25),833,my+73,12,'#beb8c2');rr(c,736,my+123,276,4,2,'#ffffff30');rr(c,736,my+123,276*(trackPosition/trackLength),4,2,'#f0ebef');text(c,musicTime(trackPosition),736,my+146,10,'#d1c9d1');text(c,'−'+musicTime(Math.ceil(trackLength-trackPosition)),983,my+146,10,'#d1c9d1');text(c,'◀◀',780,my+186,21);text(c,playing?'Ⅱ':'▶',874,my+187,30,'#fff','center',700);text(c,'▶▶',942,my+186,21);text(c,'◖',737,my+223,18,'#b2aab4');rr(c,770,my+215,210,4,2,'#ffffff30');rr(c,770,my+215,73,4,2,'#ddd6df');text(c,'◗',991,my+223,18,'#b2aab4');endLayer(c);
  drawAtmosphere(c,t,w,h,dark);
 }
 function tick(now){if(playing&&!exporting)elapsed=(elapsed+(now-last)/1000)%state.duration;last=now;render(ctx,elapsed);$('seek').value=elapsed;$('time').textContent=`00:${String(Math.floor(elapsed)).padStart(2,'0')}`;requestAnimationFrame(tick)}
