@@ -69,19 +69,22 @@ function star(c,x,y,r,a,color){c.save();c.globalAlpha=a;c.fillStyle=color;c.begi
 // Reference 1.gif: 120 frames, 50 ms per frame (6 seconds at 20 FPS).
 const GIF_FPS=20;
 const entranceFrames={quote:[0,4],main:[2,5],name:[6,4],messages:[9,5],music:[12,6],phoneMusic:[26,5]};
+// [frames before loop end to start exiting, fade duration in frames].
+const exitFrames={phoneMusic:[10,5],music:[9,5],name:[7,6],messages:[6,6],quote:[5,5],main:[3,3]};
+function layerExit(frame,layer){const [lead,length]=exitFrames[layer],p=Math.max(0,Math.min(1,(frame-(state.duration*GIF_FPS-lead))/length));return p*p*(3-2*p)}
 function playerPop(progress){const p=Math.max(0,Math.min(1,progress))-1;return 1+2.70158*p*p*p+1.70158*p*p}
 function layerProgress(t,layer){
  const [start,fade]=entranceFrames[layer],frame=t*GIF_FPS;
  const progress=Math.max(0,Math.min(1,(frame-start)/fade));
  const ease=progress*progress*(3-2*progress);
  if(layer==='phoneMusic'){
-  const exit=Math.max(0,Math.min(1,(frame-(state.duration*GIF_FPS-10))/5)),collapse=exit*exit*(3-2*exit);
+  const collapse=layerExit(frame,layer);
   const content=Math.max(0,Math.min(1,(frame-31)/5));
   const pop=playerPop((frame-start)/8);
   return {alpha:ease*(1-collapse),offset:-10*(1-ease),scaleX:(.12+.88*pop)*(1-.9*collapse),scaleY:(.4+.6*pop)*(1-.75*collapse),contentAlpha:content*content*(3-2*content)};
  }
- const outro=Math.max(0,Math.min(1,(state.duration-t)/.45));
- return {alpha:ease*outro,offset:18*(1-ease),scale:layer==='music'?.55+.45*playerPop((frame-start)/8):1};
+ const exit=layerExit(frame,layer),outro=1-exit;
+ return {alpha:ease*outro,offset:18*(1-ease)+8*exit,scale:layer==='music'?(.55+.45*playerPop((frame-start)/8))*(1-.06*exit):1};
 }
 function beginLayer(c,t,layer){const p=layerProgress(t,layer);c.save();c.globalAlpha*=p.alpha;c.translate(0,p.offset)}
 function endLayer(c){c.restore()}
