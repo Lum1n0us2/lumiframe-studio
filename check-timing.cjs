@@ -50,3 +50,10 @@ function effectTrace(time){const trace=[],saved=[];const recorder=new Proxy({glo
 for(const name of effectNames){for(const key of effectNames)sandbox.state[key]=key===name;const first=effectTrace(1.25);assert(first.length>0);assert.deepEqual(effectTrace(1.25),first);assert.notDeepEqual(effectTrace(2.5),first);effectTrace(0);effectTrace(6)}
 for(const key of effectNames)sandbox.state[key]=false;assert.equal(effectTrace(2).length,0);
 console.log('PASS: five independent effects render finite paths, animate deterministically, and fully disappear when disabled.');
+for(let frame=0;frame<120;frame++){
+ const thirds=[0,0,0];
+ for(let i=0;i<12;i++){const p=sandbox.featherPose(i,frame/120,1416,984);assert(p.x>=0&&p.x<=1416);if(p.y>=0&&p.y<=984)thirds[Math.min(2,Math.floor(p.x/472))]++}
+ assert(thirds.every(n=>n>=1),`Feathers must span left/center/right at frame ${frame}: ${thirds}`);
+}
+for(let i=0;i<12;i++){const first=sandbox.featherPose(i,0,1416,984),last=sandbox.featherPose(i,1,1416,984);for(const key of Object.keys(first))assert(Math.abs(first[key]-last[key])<1e-8)}
+console.log('PASS: feathers cover all three screen regions throughout 120 frames and repeat without a position jump.');
