@@ -68,16 +68,27 @@ function drawLines(c,lines,x,y,size,color){lines.forEach((line,i)=>text(c,line,x
 function star(c,x,y,r,a,color){c.save();c.globalAlpha=a;c.fillStyle=color;c.beginPath();c.moveTo(x,y-r);c.quadraticCurveTo(x+2,y-2,x+r,y);c.quadraticCurveTo(x+2,y+2,x,y+r);c.quadraticCurveTo(x-2,y+2,x-r,y);c.quadraticCurveTo(x-2,y-2,x,y-r);c.fill();c.restore()}
 // Reference 1.gif: 120 frames, 50 ms per frame (6 seconds at 20 FPS).
 const GIF_FPS=20;
-const entranceFrames={quote:[0,4],main:[2,5],name:[6,4],messages:[9,5],music:[12,6],phoneMusic:[24,8]};
+const entranceFrames={quote:[0,4],main:[2,5],name:[6,4],messages:[9,5],music:[12,6],phoneMusic:[26,5]};
 function layerProgress(t,layer){
  const [start,fade]=entranceFrames[layer],frame=t*GIF_FPS;
  const progress=Math.max(0,Math.min(1,(frame-start)/fade));
  const ease=progress*progress*(3-2*progress);
+ if(layer==='phoneMusic'){
+  const exit=Math.max(0,Math.min(1,(frame-(state.duration*GIF_FPS-10))/5)),collapse=exit*exit*(3-2*exit);
+  const content=Math.max(0,Math.min(1,(frame-31)/5));
+  return {alpha:ease*(1-collapse),offset:-10*(1-ease),scaleX:(.12+.88*ease)*(1-.9*collapse),scaleY:(.4+.6*ease)*(1-.75*collapse),contentAlpha:content*content*(3-2*content)};
+ }
  const outro=Math.max(0,Math.min(1,(state.duration-t)/.45));
  return {alpha:ease*outro,offset:18*(1-ease)};
 }
 function beginLayer(c,t,layer){const p=layerProgress(t,layer);c.save();c.globalAlpha*=p.alpha;c.translate(0,p.offset)}
 function endLayer(c){c.restore()}
+function beginPhoneMusic(c,t,px,py,pw,ph){
+ const p=layerProgress(t,'phoneMusic'),cx=px+pw/2,cy=py+ph-168+75/2;
+ c.save();rr(c,px+9,py+9,pw-18,ph-18,45);c.clip();
+ c.globalAlpha*=p.alpha;c.translate(cx,cy+p.offset);c.scale(p.scaleX,p.scaleY);c.translate(-cx,-cy);
+ return p;
+}
 // Reference chat: incoming dots, received bubble, composer typing, then send upward.
 function messageFrame(lines,t,animated=true){
  const time=t*6/state.duration,items=[];let typing=false,draft='';
@@ -139,7 +150,7 @@ function render(c,t){const w=1416,h=984,dark=parseInt(state.bg.slice(1,3),16)<10
  drawMainImage(c,imgs.main,mainY);endLayer(c);
  const fy=state.float?Math.sin(t*1.1)*7:0;const px=958,py=136+fy,pw=354,ph=752;
  c.save();c.shadowColor='#00000040';c.shadowBlur=17;c.shadowOffsetY=7;rr(c,px,py,pw,ph,53,'#1a191c','#8c8a8e');c.restore();photo(c,imgs.a,px+9,py+9,pw-18,ph-18,45);if(state.switch){const alpha=Math.min(1,Math.max(0,Math.sin(phase*Math.PI)*6-1.8));c.save();c.globalAlpha=alpha;photo(c,imgs.b,px+9,py+9,pw-18,ph-18,45);c.restore()}rr(c,px+126,py+20,106,25,20,'#030305');text(c,'9:41',px+29,py+40,16,'#fff','left',700);text(c,'▴ ▰',px+pw-57,py+40,16);const shade=c.createLinearGradient(0,py+400,0,py+ph);shade.addColorStop(0,'#00000000');shade.addColorStop(1,'#00000050');rr(c,px+9,py+9,pw-18,ph-18,45,shade);
- beginLayer(c,t,'phoneMusic');glass(c,px+23,py+ph-168,pw-46,75,20,dark?.19:.73);photo(c,imgs.cover,px+34,py+ph-157,53,53,10);const phoneMusicCenterY=py+ph-168+75/2;c.save();c.textBaseline='middle';text(c,state.song.slice(0,21),px+99,phoneMusicCenterY-9,14,dark?'#fff':'#493c4a','left',600);text(c,state.artist.slice(0,25),px+99,phoneMusicCenterY+10,11,dark?'#ddd':'#8b7c89');c.restore();for(let i=0;i<5;i++){const sh=8+Math.abs(Math.sin(t*3+i))*12;rr(c,px+pw-67+i*5,py+ph-131-sh/2,3,sh,2,state.reply)}endLayer(c);rr(c,px+118,py+ph-23,120,4,3,'#ffffffbb');
+ const phoneMotion=beginPhoneMusic(c,t,px,py,pw,ph);glass(c,px+23,py+ph-168,pw-46,75,20,dark?.19:.73);c.save();c.globalAlpha*=phoneMotion.contentAlpha;photo(c,imgs.cover,px+34,py+ph-157,53,53,10);const phoneMusicCenterY=py+ph-168+75/2;c.save();c.textBaseline='middle';text(c,state.song.slice(0,21),px+99,phoneMusicCenterY-9,14,dark?'#fff':'#493c4a','left',600);text(c,state.artist.slice(0,25),px+99,phoneMusicCenterY+10,11,dark?'#ddd':'#8b7c89');c.restore();for(let i=0;i<5;i++){const sh=8+Math.abs(Math.sin(t*3+i))*12;rr(c,px+pw-67+i*5,py+ph-131-sh/2,3,sh,2,state.reply)}c.restore();endLayer(c);rr(c,px+118,py+ph-23,120,4,3,'#ffffffbb');
  beginLayer(c,t,'quote');const qy=55+(state.float?Math.sin(t+1)*5:0),quoteLines=textLines(c,state.quote,290,18),quoteHeight=48+(quoteLines.length-1)*27;speechBubble(c,530,qy,335,quoteHeight,state.accent,'left',18,8);drawLines(c,quoteLines,554,qy+30,18,dark?'#fff':'#655463');endLayer(c);
  beginLayer(c,t,'messages');const cy=522;glass(c,615,cy,295,390,26,.78);rr(c,619,cy+30,41,346,12,state.accent+'40');text(c,'＋',628,cy+72,29,'#8c8291');for(let i=0;i<6;i++)photo(c,imgs[`chat${i+1}`],626,cy+95+i*43,29,29,15);text(c,'MESSAGES',680,cy+52,10,'#aaa0ad');text(c,'⌕ ⋮',860,cy+52,17,'#9e94a0');c.fillStyle='#ded6de';c.fillRect(672,cy+68,222,1);
  const lines=state.messages.split('\n').filter(Boolean).slice(0,5),conversation=messageFrame(lines,t,state.chat);
