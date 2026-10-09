@@ -21,3 +21,5 @@
 .background-title{margin-top:28px}.field output{float:right;color:#aa8098}#gradientOptions .colors input{max-width:100px}#gradientOptions[hidden]{display:none}
 
 #bgLeftField[hidden],#bgDirectionField[hidden]{display:none}
+
+#waveMiddleField[hidden]{display:none}
