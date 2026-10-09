@@ -2,13 +2,13 @@ const $=id=>document.getElementById(id);
 const presets=[
  {name:'분홍빛 설렘',en:'PINK DAYDREAM',bg:'#fffafb',accent:'#efb3d0',reply:'#9cd8eb',pair:'Pair Name',handle:'@ID',quote:'Sample Text',song:'Song Title',artist:'Artist'}
 ];
-const backgroundDefaults={bgMode:'solid',bgEnd:'#b49bc9',bgDirection:'down',bgStart:60};
+const backgroundDefaults={bgMode:'solid',bgLeft:'#ead7e4',bgEnd:'#b49bc9',bgDirection:'down',bgStart:60};
 const effectDefaults={particles:true,circles:true,feathers:false};
 let state={...backgroundDefaults,...effectDefaults,theme:3,...presets[0],quoteColor:presets[0].accent,messageColor:presets[0].reply,messages:'Text1\nText2\nText3',zoom:1,position:.5,card:false,sparkles:true,hearts:true,float:true,chat:true,switch:true,duration:6};
 let musicRequest=0;
 let sources={},imgs={},playing=true,elapsed=0,last=performance.now(),exporting=false,audio=new Audio();
 const canvas=$('canvas'),ctx=canvas.getContext('2d');
-const keys=['bgMode','bgEnd','bgDirection','bgStart','bg','accent','reply','quoteColor','messageColor','pair','handle','quote','messages','song','artist','zoom','position','card','sparkles','hearts','particles','circles','feathers','float','chat','switch','duration'];
+const keys=['bgMode','bgLeft','bgEnd','bgDirection','bgStart','bg','accent','reply','quoteColor','messageColor','pair','handle','quote','messages','song','artist','zoom','position','card','sparkles','hearts','particles','circles','feathers','float','chat','switch','duration'];
 const slots=[['main','메인 일러스트','왼쪽의 큰 이미지'],['a','스마트폰 · A','첫 번째 화면'],['b','스마트폰 · B','두 번째 화면'],['cover','앨범 커버','음악 위젯의 작은 이미지'],['profile','프로필 이미지','이름 카드의 원형 프로필'],...Array.from({length:6},(_,i)=>[`chat${i+1}`,`메시지 프로필 ${i+1}`,`메시지 창 왼쪽 · 위에서 ${i+1}번째`])];
 function completeAssets(assets){return Object.fromEntries(slots.map(([k])=>[k,assets[k]??null]))}
 function toast(s){$('toast').textContent=s;$('toast').classList.add('show');setTimeout(()=>$('toast').classList.remove('show'),2600)}
@@ -26,7 +26,7 @@ function placeholder(key){
  return c;
 }
 async function setAssets(){for(const [k] of slots){if(!imgs[k]||imgs[k].isPlaceholder){sources[k]=null;imgs[k]=placeholder(k)}}updateUploads()}
-function syncBackground(){$('gradientOptions').hidden=state.bgMode!=='gradient';$('bgStartValue').textContent=state.bgStart+'%'}
+function syncBackground(){const duo=state.bgMode==='twoTone';$('gradientOptions').hidden=state.bgMode==='solid';$('bgLeftField').hidden=!duo;$('bgDirectionField').hidden=duo;$('bgEndLabel').textContent=duo?'하단 오른쪽':'끝 색상';$('bgStartValue').textContent=state.bgStart+'%'}
 function sync(){syncBackground();$('zoomValue').textContent=Math.round(state.zoom*100)+'%';$('trackDuration').value=state.trackDuration?musicTime(state.trackDuration):'음악 파일을 선택해주세요';keys.forEach(k=>{if($(k).type==='checkbox')$(k).checked=state[k];else $(k).value=state[k]});$('seek').max=state.duration;$('length').textContent=`00:${String(state.duration).padStart(2,'0')}`}
 const imageGroups={main:['main'],phone:['a','b'],cover:['cover'],profile:['profile'],chat:Array.from({length:6},(_,i)=>`chat${i+1}`)};
 slots.forEach(([k,title,sub])=>{const label=document.createElement('label');label.className='upload'+(k.startsWith('chat')?' compact-profile':'');label.innerHTML=`<img id="thumb-${k}" alt=""><span><b>${k.startsWith('chat')?k.replace('chat','프로필 '):title}</b><small>${sub}</small></span><span class="plus">＋</span><input id="file-${k}" type="file" accept="image/*">`;const group=Object.keys(imageGroups).find(g=>imageGroups[g].includes(k));$('uploads-'+group).append(label);$('file-'+k).onchange=async e=>{const f=e.target.files[0];if(!f)return;try{if(f.size>25*1024*1024)throw Error('25MB 이하 이미지를 선택해주세요.');const src=await readFile(f);const im=await loadImage(src);sources[k]=src;imgs[k]=im;if(k==='main'){state.zoom=1;state.position=.5;sync()}updateUploads();toast('이미지를 바꿨어요.')}catch(err){toast(err.message||'이미지를 읽을 수 없어요.')}}});
@@ -149,6 +149,10 @@ function messageFrame(lines,t,animated=true){
 }
 function drawBackground(c,w,h){
  c.fillStyle=state.bg;c.fillRect(0,0,w,h);
+ if(state.bgMode==='twoTone'){
+  const lower=c.createLinearGradient(0,0,w,0);lower.addColorStop(0,state.bgLeft);lower.addColorStop(1,state.bgEnd);c.fillStyle=lower;c.fillRect(0,0,w,h);
+  const upper=c.createLinearGradient(0,0,0,h);upper.addColorStop(0,state.bg);upper.addColorStop(state.bgStart/100,state.bg);upper.addColorStop(1,state.bg+'00');c.fillStyle=upper;c.fillRect(0,0,w,h);return;
+ }
  if(state.bgMode!=='gradient')return;
  const directions={down:[0,0,0,h],up:[0,h,0,0],right:[0,0,w,0],left:[w,0,0,0],diagonal:[0,0,w,h]};
  const gradient=c.createLinearGradient(...directions[state.bgDirection]);
@@ -237,14 +241,14 @@ $('audioFile').onchange=async e=>{
  toast(applied.length?'음악 정보를 자동으로 설정했어요.':'음악 정보가 없어 기존 설정을 유지했어요.');
 };
 $('fullscreen').onclick=()=>{if(document.fullscreenElement)document.exitFullscreen();else document.querySelector('.canvas-wrap').requestFullscreen().catch(()=>toast('전체 화면을 지원하지 않는 브라우저예요.'))};
-$('referenceGradient').onclick=()=>{Object.assign(state,{bgMode:'gradient',bg:'#050508',bgEnd:'#b49bc9',bgDirection:'down',bgStart:60});sync();setAssets();toast('원본 GIF처럼 아래쪽으로 번지는 배경을 적용했어요.')};
+
 $('reset').onclick=()=>{state={...state,zoom:1,position:.5,card:true,sparkles:true,hearts:true,...effectDefaults,float:true,chat:true,switch:true,duration:6};sync();elapsed=0;toast('효과를 초기화했어요.')};
 
 $('exportTop').onclick=()=>$('exportDialog').showModal();document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>$(b.dataset.close).close());
 function download(blob,name){const a=document.createElement('a'),url=URL.createObjectURL(blob);a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),30000)}
 $('png').onclick=()=>{render(ctx,elapsed);canvas.toBlob(b=>{if(b){download(b,'lumi-pair.png');$('exportStatus').textContent='PNG 이미지를 저장했어요.'}},'image/png')};
 $('saveProject').onclick=async()=>{const assets={};for(const [k,im] of Object.entries(imgs)){if(im.isPlaceholder){assets[k]=null;continue}const c=document.createElement('canvas');c.width=im.naturalWidth;c.height=im.naturalHeight;c.getContext('2d').drawImage(im,0,0);assets[k]=c.toDataURL('image/png')}download(new Blob([JSON.stringify({version:2,state,assets})],{type:'application/json'}),'lumi-project.json');toast('프로젝트를 저장했어요. 음악 파일은 별도 보관해주세요.')};
-$('loadProject').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const p=JSON.parse(await f.text());if(![1,2].includes(p.version)||!p.state||!p.assets)throw Error();const next={...state};for(const k of keys){const v=p.state[k]??backgroundDefaults[k]??effectDefaults[k]??({quoteColor:p.state.accent,messageColor:p.state.reply})[k];if(typeof v!==typeof state[k])throw Error();next[k]=v}if(![1,2,3,4,5].includes(p.state.theme)||![6,8,12].includes(next.duration)||!Number.isFinite(next.zoom)||next.zoom<.25||next.zoom>3||next.position<0||next.position>1)throw Error();if(!['solid','gradient'].includes(next.bgMode)||!['down','up','right','left','diagonal'].includes(next.bgDirection)||!Number.isFinite(next.bgStart)||next.bgStart<0||next.bgStart>90)throw Error();for(const k of ['bg','bgEnd','accent','reply','quoteColor','messageColor'])if(!/^#[0-9a-f]{6}$/i.test(next[k]))throw Error();const importedAssets=completeAssets(p.assets);for(const [k] of slots)if(importedAssets[k]!==null&&(typeof importedAssets[k]!=='string'||!importedAssets[k].startsWith('data:image/')))throw Error();const pairs=await Promise.all(slots.map(async([k])=>[k,importedAssets[k]===null?null:await loadImage(importedAssets[k])]));musicRequest++;audio.pause();if(audio.src)URL.revokeObjectURL(audio.src);audio=new Audio();next.trackDuration=Number.isFinite(p.state.trackDuration)&&p.state.trackDuration>0?p.state.trackDuration:0;$('audioName').textContent='프로젝트의 음악 정보가 복원됐어요. 재생하려면 음악 파일을 다시 선택해주세요.';state={...next,theme:p.state.theme};imgs=Object.fromEntries(pairs.map(([k,im])=>[k,im||placeholder(k)]));sources=Object.fromEntries(slots.map(([k])=>[k,importedAssets[k]]));sync();updateUploads();elapsed=0;toast('프로젝트를 불러왔어요.')}catch{toast('올바른 LUMI 프로젝트 파일을 선택해주세요.')}e.target.value=''};
+$('loadProject').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const p=JSON.parse(await f.text());if(![1,2].includes(p.version)||!p.state||!p.assets)throw Error();const next={...state};for(const k of keys){const v=p.state[k]??backgroundDefaults[k]??effectDefaults[k]??({quoteColor:p.state.accent,messageColor:p.state.reply})[k];if(typeof v!==typeof state[k])throw Error();next[k]=v}if(![1,2,3,4,5].includes(p.state.theme)||![6,8,12].includes(next.duration)||!Number.isFinite(next.zoom)||next.zoom<.25||next.zoom>3||next.position<0||next.position>1)throw Error();if(!['solid','gradient','twoTone'].includes(next.bgMode)||!['down','up','right','left','diagonal'].includes(next.bgDirection)||!Number.isFinite(next.bgStart)||next.bgStart<0||next.bgStart>90)throw Error();for(const k of ['bg','bgLeft','bgEnd','accent','reply','quoteColor','messageColor'])if(!/^#[0-9a-f]{6}$/i.test(next[k]))throw Error();const importedAssets=completeAssets(p.assets);for(const [k] of slots)if(importedAssets[k]!==null&&(typeof importedAssets[k]!=='string'||!importedAssets[k].startsWith('data:image/')))throw Error();const pairs=await Promise.all(slots.map(async([k])=>[k,importedAssets[k]===null?null:await loadImage(importedAssets[k])]));musicRequest++;audio.pause();if(audio.src)URL.revokeObjectURL(audio.src);audio=new Audio();next.trackDuration=Number.isFinite(p.state.trackDuration)&&p.state.trackDuration>0?p.state.trackDuration:0;$('audioName').textContent='프로젝트의 음악 정보가 복원됐어요. 재생하려면 음악 파일을 다시 선택해주세요.';state={...next,theme:p.state.theme};imgs=Object.fromEntries(pairs.map(([k,im])=>[k,im||placeholder(k)]));sources=Object.fromEntries(slots.map(([k])=>[k,importedAssets[k]]));sync();updateUploads();elapsed=0;toast('프로젝트를 불러왔어요.')}catch{toast('올바른 LUMI 프로젝트 파일을 선택해주세요.')}e.target.value=''};
 // GIF89a encoder: adaptive median-cut palette, cached nearest colors and LZW.
 let gifPalette=[],gifLookup;
 function makePalette(frames){
