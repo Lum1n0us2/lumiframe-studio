@@ -181,8 +181,9 @@ function drawAtmosphere(c,t,w,h,dark){
  const phase=t/state.duration,turn=phase*Math.PI*2,color=dark?'#ffffff':'#b69bb4';
  if(state.particles)for(let i=0;i<137;i++){
   const x=effectSeed(i,1)*w+Math.sin(turn+i)*5,y=effectSeed(i,2)*h+Math.cos(turn+i)*5;
-  const radius=(2.4+effectSeed(i,3)*5.5)*.85,alpha=.2+.5*(.5+.5*Math.sin(turn*2+i));
-  softLight(c,x,y,radius,color,alpha);
+  const radius=(2.4+effectSeed(i,3)*5.5)*.55,alpha=.2+.5*(.5+.5*Math.sin(turn*2+i));
+  softLight(c,x,y,radius,color,alpha*.45);
+  c.save();c.globalAlpha=alpha;c.fillStyle=color;c.beginPath();c.arc(x,y,.65+effectSeed(i,3)*.85,0,Math.PI*2);c.fill();c.restore();
  }
  if(state.sparkles)for(let i=0;i<27;i++){
   const pulse=.5+.5*Math.sin(turn*2+i),size=pulse*pulse*(3-2*pulse);
