@@ -38,7 +38,7 @@ slots.forEach(([k,title,sub])=>{const label=document.createElement('label');labe
 function updateUploads(){slots.forEach(([k])=>$('thumb-'+k).src=sources[k]||imgs[k].toDataURL());for(const [group,list] of Object.entries(imageGroups))$('count-'+group).textContent=`${list.filter(k=>sources[k]).length} / ${list.length}`}
 function readFile(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(f)})}
 for(const id of ['receivedMessage','sentMessage'])$(id).addEventListener('input',()=>{state.messages=$('receivedMessage').value+'\n'+$('sentMessage').value});
-keys.filter(k=>k!=='messages').forEach(k=>$(k).addEventListener('input',()=>{state[k]=$(k).type==='checkbox'?$(k).checked:['zoom','position','duration','bgStart','particleCount','waveColors'].includes(k)?Number($(k).value):$(k).value;if(['accent','reply','matchProfileDots','profileDot1','profileDot2','profileDot3'].includes(k))syncProfileDots();if(k==='waveColors')syncWaveform();if(k==='particles'||k==='particleCount')syncParticles();if(k==='zoom')$('zoomValue').textContent=Math.round(state.zoom*100)+'%';if(k.startsWith('bg'))syncBackground();if(k==='bg')setAssets();if(k==='duration'){elapsed%=state.duration;sync()}}));
+keys.filter(k=>k!=='messages').forEach(k=>$(k).addEventListener('input',()=>{state[k]=$(k).type==='checkbox'?$(k).checked:['zoom','position','duration','bgStart','particleCount','waveColors'].includes(k)?Number($(k).value):$(k).value;if(['accent','reply','messageColor','matchProfileDots','profileDot1','profileDot2','profileDot3'].includes(k))syncProfileDots();if(k==='waveColors')syncWaveform();if(k==='particles'||k==='particleCount')syncParticles();if(k==='zoom')$('zoomValue').textContent=Math.round(state.zoom*100)+'%';if(k.startsWith('bg'))syncBackground();if(k==='bg')setAssets();if(k==='duration'){elapsed%=state.duration;sync()}}));
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.panel').forEach(x=>x.classList.toggle('active',x.id===b.dataset.tab))});
 function rr(c,x,y,w,h,r,fill,stroke){c.beginPath();c.roundRect(x,y,w,h,r);if(fill){c.fillStyle=fill;c.fill()}if(stroke){c.strokeStyle=stroke;c.stroke()}}
 // One continuous silhouette, filled once so the tail stays seamless during fades.
@@ -93,8 +93,7 @@ function drawPhoneStatus(c,x,y,w,now=new Date()){
 }
 function profileDotColors(){
  if(!state.matchProfileDots)return [state.profileDot1||'#dfb2c1',state.profileDot2||'#acd5d7',state.profileDot3||'#b9a9cf'];
- const mix='#'+[1,3,5].map(offset=>Math.round((parseInt(state.accent.slice(offset,offset+2),16)+parseInt(state.reply.slice(offset,offset+2),16))/2).toString(16).padStart(2,'0')).join('');
- return [state.accent,mix,state.reply];
+ return [state.accent,state.reply,state.messageColor];
 }
 function glass(c,x,y,w,h,r,opacity=.82,tint='name'){
  c.save();c.shadowColor='#22132d20';c.shadowBlur=28;c.shadowOffsetY=10;rr(c,x,y,w,h,r,`rgba(255,255,255,${opacity})`);c.restore();
