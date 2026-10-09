@@ -153,3 +153,10 @@ for(const count of [0,1,137,600]){
 }
 sandbox.state.particles=false;assert.equal(effectTrace(1).length,0);
 console.log('PASS: particle count renders 0–600 particles and the effect toggle still hides all particles.');
+
+for(const count of [2,3]){
+ Object.assign(sandbox.state,{waveColors:count,waveStart:'#112233',waveMiddle:'#445566',waveEnd:'#778899'});
+ const stops=[];sandbox.waveformGradient({createLinearGradient(...points){assert.deepEqual(points,[10,20,33,20]);return {addColorStop(...stop){stops.push(stop)}}}},10,20);
+ assert.deepEqual(stops,count===2?[[0,'#112233'],[1,'#778899']]:[[0,'#112233'],[.5,'#445566'],[1,'#778899']]);
+}
+console.log('PASS: phone waveform supports independent two- and three-color gradients.');
