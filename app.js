@@ -169,13 +169,24 @@ function featherPose(i,phase,w,h){
  const x=Math.max(22,Math.min(w-22,(column+.5)*w/6+sway));
  return {x,y:travel*(h+200)-100,travel,size:26+effectSeed(i,15)*20,angle:-.65+Math.sin(travel*Math.PI*2+i)*.8};
 }
+// Feathered light edges stay soft at preview and GIF export resolutions.
+function softLight(c,x,y,r,color,alpha){
+ c.save();c.globalAlpha*=alpha;
+ const glow=c.createRadialGradient(x,y,0,x,y,r);
+ glow.addColorStop(0,color+'e6');glow.addColorStop(.18,color+'99');glow.addColorStop(.48,color+'38');glow.addColorStop(1,color+'00');
+ c.fillStyle=glow;c.fillRect(x-r,y-r,r*2,r*2);c.restore();
+}
 function drawAtmosphere(c,t,w,h,dark){
  const phase=t/state.duration,turn=phase*Math.PI*2,color=dark?'#ffffff':'#b69bb4';
  if(state.particles)for(let i=0;i<105;i++){
   const x=effectSeed(i,1)*w+Math.sin(turn+i)*5,y=effectSeed(i,2)*h+Math.cos(turn+i)*5;
-  c.save();c.globalAlpha=.12+.35*(.5+.5*Math.sin(turn*2+i));c.fillStyle=color;c.beginPath();c.arc(x,y,.7+effectSeed(i,3)*1.8,0,Math.PI*2);c.fill();c.restore();
+  const radius=2.4+effectSeed(i,3)*5.5,alpha=.2+.5*(.5+.5*Math.sin(turn*2+i));
+  softLight(c,x,y,radius,color,alpha);
  }
- if(state.sparkles)for(let i=0;i<27;i++)star(c,effectSeed(i,4)*w,effectSeed(i,5)*h,3+effectSeed(i,6)*9,.15+.65*(.5+.5*Math.sin(turn*2+i)),dark?'#ffffff':'#d8b9cf');
+ if(state.sparkles)for(let i=0;i<27;i++){
+  const x=effectSeed(i,4)*w,y=effectSeed(i,5)*h,r=3+effectSeed(i,6)*9,alpha=.15+.65*(.5+.5*Math.sin(turn*2+i)),tint=dark?'#ffffff':'#d8b9cf';
+  softLight(c,x,y,r*2.2,tint,alpha*.48);star(c,x,y,r,alpha,tint);
+ }
  if(state.hearts)for(let i=0;i<25;i++){
   const x=effectSeed(i,7)*w+Math.sin(turn+i)*8,y=effectSeed(i,8)*h+Math.cos(turn+i)*6,size=8+effectSeed(i,9)*13;
   c.save();c.translate(x,y);c.rotate(Math.sin(turn+i)*.2);c.scale(size,size);c.globalAlpha=.12+.36*(.5+.5*Math.sin(turn*2+i*1.8));c.strokeStyle=dark?'#ffffff':state.accent;c.lineWidth=.09;
@@ -183,7 +194,7 @@ function drawAtmosphere(c,t,w,h,dark){
  }
  if(state.circles)for(let i=0;i<16;i++){
   const x=effectSeed(i,10)*w+Math.sin(turn+i)*15,y=effectSeed(i,11)*h+Math.cos(turn+i)*12,r=7+effectSeed(i,12)*22;
-  c.save();c.globalAlpha=.10+.16*(.5+.5*Math.sin(turn+i));c.lineWidth=1.5;c.strokeStyle=color;c.fillStyle=dark?'#ffffff16':'#b69bb410';c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.fill();c.stroke();c.beginPath();c.arc(x-r*.16,y-r*.16,r*.7,Math.PI,Math.PI*1.4);c.stroke();c.restore();
+  c.save();c.globalAlpha=.10+.16*(.5+.5*Math.sin(turn+i));c.lineWidth=1.2;c.strokeStyle=color;c.fillStyle=dark?'#ffffff0a':'#b69bb408';c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.closePath();c.fill();c.stroke();c.restore();
  }
  if(state.feathers)for(let i=0;i<12;i++){
   const {x,y,travel,size,angle}=featherPose(i,phase,w,h);
