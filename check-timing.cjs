@@ -114,3 +114,11 @@ sandbox.state.accent='#335577';sandbox.state.reply='#775533';sandbox.render(c,4.
 assert.deepEqual(bubbleColors,initial);assert(initial.some(b=>b.x===530&&b.color==='#112233'));assert(initial.some(b=>b.color==='#bbccdd'));assert(initial.some(b=>b.color==='#f3f0f3'));
 assert.equal(sandbox.bubbleTextColor('#000000'),'#ffffff');assert.equal(sandbox.bubbleTextColor('#ffffff'),'#423743');
 console.log('PASS: gradient colors are independent of quote/reply bubbles; incoming gray stays fixed and text contrast adapts.');
+const backgroundGradients=[];
+const backgroundContext={fillRect(){},createLinearGradient(...points){const gradient={points,stops:[],addColorStop(...stop){this.stops.push(stop)}};backgroundGradients.push(gradient);return gradient}};
+Object.assign(sandbox.state,{bgMode:'twoTone',bg:'#000000',bgLeft:'#ead7e4',bgEnd:'#b49bc9',bgStart:60});
+sandbox.drawBackground(backgroundContext,1416,984);
+assert.deepEqual(backgroundGradients.map(g=>g.points),[[0,0,1416,0],[0,0,0,984]]);
+assert.deepEqual(backgroundGradients[0].stops,[[0,'#ead7e4'],[1,'#b49bc9']]);
+assert.deepEqual(backgroundGradients[1].stops,[[0,'#000000'],[.6,'#000000'],[1,'#00000000']]);
+console.log('PASS: two-tone background keeps the top solid and reveals independent left/right colors below the transition.');
