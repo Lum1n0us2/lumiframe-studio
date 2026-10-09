@@ -189,12 +189,20 @@ function drawAtmosphere(c,t,w,h,dark){
  }
  if(state.hearts)for(let i=0;i<25;i++){
   const x=effectSeed(i,7)*w+Math.sin(turn+i)*8,y=effectSeed(i,8)*h+Math.cos(turn+i)*6,size=8+effectSeed(i,9)*13;
-  c.save();c.translate(x,y);c.rotate(Math.sin(turn+i)*.2);c.scale(size,size);c.globalAlpha=.12+.36*(.5+.5*Math.sin(turn*2+i*1.8));c.strokeStyle=dark?'#ffffff':state.accent;c.lineWidth=.09;
-  c.beginPath();c.moveTo(0,.8);c.bezierCurveTo(-1.6,-.1,-.9,-1.25,0,-.55);c.bezierCurveTo(.9,-1.25,1.6,-.1,0,.8);c.stroke();c.restore();
+  const tint=dark?'#ffffff':state.accent,alpha=.12+.36*(.5+.5*Math.sin(turn*2+i*1.8));
+  softLight(c,x,y-size*.15,size*1.65,tint,alpha*.38);
+  c.save();c.translate(x,y);c.rotate(Math.sin(turn+i)*.2);c.scale(size,size);c.globalAlpha=alpha;c.strokeStyle=tint;c.lineWidth=.09;
+  const inner=c.createRadialGradient(0,-.2,0,0,-.2,1.2);inner.addColorStop(0,tint+'70');inner.addColorStop(.55,tint+'38');inner.addColorStop(1,tint+'08');c.fillStyle=inner;
+  c.beginPath();c.moveTo(0,.8);c.bezierCurveTo(-1.6,-.1,-.9,-1.25,0,-.55);c.bezierCurveTo(.9,-1.25,1.6,-.1,0,.8);c.closePath();c.fill();
+  c.shadowColor=tint;c.shadowBlur=7;c.stroke();c.restore();
  }
  if(state.circles)for(let i=0;i<16;i++){
   const x=effectSeed(i,10)*w+Math.sin(turn+i)*15,y=effectSeed(i,11)*h+Math.cos(turn+i)*12,r=7+effectSeed(i,12)*22;
-  c.save();c.globalAlpha=.10+.16*(.5+.5*Math.sin(turn+i));c.lineWidth=1.2;c.strokeStyle=color;c.fillStyle=dark?'#ffffff0a':'#b69bb408';c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.closePath();c.fill();c.stroke();c.restore();
+  const alpha=.10+.16*(.5+.5*Math.sin(turn+i));
+  softLight(c,x,y,r*1.55,color,alpha*.45);
+  c.save();c.globalAlpha=alpha;c.lineWidth=1.2;c.strokeStyle=color;
+  const inner=c.createRadialGradient(x,y,0,x,y,r);inner.addColorStop(0,color+'60');inner.addColorStop(.55,color+'30');inner.addColorStop(1,color+'08');c.fillStyle=inner;
+  c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.closePath();c.fill();c.shadowColor=color;c.shadowBlur=7;c.stroke();c.restore();
  }
  if(state.feathers)for(let i=0;i<12;i++){
   const {x,y,travel,size,angle}=featherPose(i,phase,w,h);
