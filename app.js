@@ -4,7 +4,7 @@ const presets=[
 ];
 const backgroundDefaults={bgMode:'solid',bgLeft:'#ead7e4',bgEnd:'#b49bc9',bgDirection:'down',bgStart:60};
 const effectDefaults={particles:true,circles:true,feathers:false};
-let state={...backgroundDefaults,...effectDefaults,theme:3,...presets[0],quoteColor:presets[0].accent,messageColor:presets[0].reply,messages:'Text1\nText2\nText3',zoom:1,position:.5,card:false,sparkles:true,hearts:true,float:true,chat:true,switch:true,duration:6};
+let state={...backgroundDefaults,...effectDefaults,theme:3,...presets[0],quoteColor:presets[0].accent,messageColor:presets[0].reply,messages:'Text1\nText2',zoom:1,position:.5,card:false,sparkles:true,hearts:true,float:true,chat:true,switch:true,duration:6};
 let musicRequest=0;
 let sources={},imgs={},playing=true,elapsed=0,last=performance.now(),exporting=false,audio=new Audio();
 const canvas=$('canvas'),ctx=canvas.getContext('2d');
@@ -27,12 +27,13 @@ function placeholder(key){
 }
 async function setAssets(){for(const [k] of slots){if(!imgs[k]||imgs[k].isPlaceholder){sources[k]=null;imgs[k]=placeholder(k)}}updateUploads()}
 function syncBackground(){const duo=state.bgMode==='twoTone';$('gradientOptions').hidden=state.bgMode==='solid';$('bgLeftField').hidden=!duo;$('bgDirectionField').hidden=duo;$('bgEndLabel').textContent=duo?'하단 오른쪽':'끝 색상';$('bgStartValue').textContent=state.bgStart+'%'}
-function sync(){syncBackground();$('zoomValue').textContent=Math.round(state.zoom*100)+'%';$('trackDuration').value=state.trackDuration?musicTime(state.trackDuration):'음악 파일을 선택해주세요';keys.forEach(k=>{if($(k).type==='checkbox')$(k).checked=state[k];else $(k).value=state[k]});$('seek').max=state.duration;$('length').textContent=`00:${String(state.duration).padStart(2,'0')}`}
+function sync(){const messages=state.messages.split('\n').slice(0,2);state.messages=messages.join('\n');$('receivedMessage').value=messages[0]||'';$('sentMessage').value=messages[1]||'';syncBackground();$('zoomValue').textContent=Math.round(state.zoom*100)+'%';$('trackDuration').value=state.trackDuration?musicTime(state.trackDuration):'음악 파일을 선택해주세요';keys.filter(k=>k!=='messages').forEach(k=>{if($(k).type==='checkbox')$(k).checked=state[k];else $(k).value=state[k]});$('seek').max=state.duration;$('length').textContent=`00:${String(state.duration).padStart(2,'0')}`}
 const imageGroups={main:['main'],phone:['a','b'],cover:['cover'],profile:['profile'],chat:Array.from({length:6},(_,i)=>`chat${i+1}`)};
 slots.forEach(([k,title,sub])=>{const label=document.createElement('label');label.className='upload'+(k.startsWith('chat')?' compact-profile':'');label.innerHTML=`<img id="thumb-${k}" alt=""><span><b>${k.startsWith('chat')?k.replace('chat','프로필 '):title}</b><small>${sub}</small></span><span class="plus">＋</span><input id="file-${k}" type="file" accept="image/*">`;const group=Object.keys(imageGroups).find(g=>imageGroups[g].includes(k));$('uploads-'+group).append(label);$('file-'+k).onchange=async e=>{const f=e.target.files[0];if(!f)return;try{if(f.size>25*1024*1024)throw Error('25MB 이하 이미지를 선택해주세요.');const src=await readFile(f);const im=await loadImage(src);sources[k]=src;imgs[k]=im;if(k==='main'){state.zoom=1;state.position=.5;sync()}updateUploads();toast('이미지를 바꿨어요.')}catch(err){toast(err.message||'이미지를 읽을 수 없어요.')}}});
 function updateUploads(){slots.forEach(([k])=>$('thumb-'+k).src=sources[k]||imgs[k].toDataURL());for(const [group,list] of Object.entries(imageGroups))$('count-'+group).textContent=`${list.filter(k=>sources[k]).length} / ${list.length}`}
 function readFile(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(f)})}
-keys.forEach(k=>$(k).addEventListener('input',()=>{state[k]=$(k).type==='checkbox'?$(k).checked:['zoom','position','duration','bgStart'].includes(k)?Number($(k).value):$(k).value;if(k==='zoom')$('zoomValue').textContent=Math.round(state.zoom*100)+'%';if(k.startsWith('bg'))syncBackground();if(k==='bg')setAssets();if(k==='duration'){elapsed%=state.duration;sync()}}));
+for(const id of ['receivedMessage','sentMessage'])$(id).addEventListener('input',()=>{state.messages=$('receivedMessage').value+'\n'+$('sentMessage').value});
+keys.filter(k=>k!=='messages').forEach(k=>$(k).addEventListener('input',()=>{state[k]=$(k).type==='checkbox'?$(k).checked:['zoom','position','duration','bgStart'].includes(k)?Number($(k).value):$(k).value;if(k==='zoom')$('zoomValue').textContent=Math.round(state.zoom*100)+'%';if(k.startsWith('bg'))syncBackground();if(k==='bg')setAssets();if(k==='duration'){elapsed%=state.duration;sync()}}));
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.panel').forEach(x=>x.classList.toggle('active',x.id===b.dataset.tab))});
 function rr(c,x,y,w,h,r,fill,stroke){c.beginPath();c.roundRect(x,y,w,h,r);if(fill){c.fillStyle=fill;c.fill()}if(stroke){c.strokeStyle=stroke;c.stroke()}}
 // One continuous silhouette, filled once so the tail stays seamless during fades.
@@ -137,11 +138,11 @@ function beginPhoneMusic(c,t,px,py,pw,ph){
 // Reference chat: incoming dots, received bubble, composer typing, then send upward.
 function messageFrame(lines,t,animated=true){
  const time=t*6/state.duration,items=[];let typing=false,typingOpacity=0,draft='';
- for(let i=0;i<lines.length;i++){
-  const extra=Math.max(1,lines.length-2),slot=1.05/extra;
-  const start=i===0?1.1:i===1?2.55:4.25+(i-2)*slot;
-  const send=i===0?2.05:i===1?3.75:start+slot*.65;
-  const travel=i===0?.2:i===1?.3:Math.min(.2,slot*.3);
+ for(let i=0;i<Math.min(2,lines.length);i++){
+  if(!lines[i].trim())continue;
+  const start=i===0?1.1:2.55;
+  const send=i===0?2.05:3.75;
+  const travel=i===0?.2:.3;
   if(!animated||time>=send){items.push({index:i,text:lines[i],progress:animated?Math.max(0,Math.min(1,(time-send)/travel)):1});continue}
   if(time>=start){if(i%2){const chars=Array.from(lines[i]);draft=chars.slice(0,Math.min(chars.length,Math.floor((time-start)/((send-start)*.78)*chars.length)+1)).join('')}else{typing=time<send-.05;typingOpacity=Math.max(0,Math.min(1,(send-.05-time)/.18))}}
  }
@@ -202,7 +203,7 @@ function render(c,t){const w=1416,h=984,dark=parseInt(state.bg.slice(1,3),16)<10
  const phoneMotion=beginPhoneMusic(c,t,px,py,pw,ph);glass(c,px+23,py+ph-168,pw-46,75,20,dark?.19:.73,'none');c.save();c.globalAlpha*=phoneMotion.contentAlpha;photo(c,imgs.cover,px+34,py+ph-157,53,53,10);const phoneMusicCenterY=py+ph-168+75/2;c.save();c.textBaseline='middle';text(c,state.song.slice(0,21),px+99,phoneMusicCenterY-9,14,dark?'#fff':'#493c4a','left',600);text(c,state.artist.slice(0,25),px+99,phoneMusicCenterY+10,11,dark?'#ddd':'#8b7c89');c.restore();for(let i=0;i<5;i++){const sh=8+Math.abs(Math.sin(t*3+i))*12;rr(c,px+pw-67+i*5,py+ph-131-sh/2,3,sh,2,state.reply)}c.restore();endLayer(c);rr(c,px+118,py+ph-23,120,4,3,'#ffffffbb');
  beginLayer(c,t,'quote');const qy=55+(state.float?Math.sin(t+1)*5:0),quoteLines=textLines(c,state.quote,290,18),quoteHeight=48+(quoteLines.length-1)*27;speechBubble(c,530,qy,335,quoteHeight,state.quoteColor,'left',18,8);drawLines(c,quoteLines,554,qy+30,18,bubbleTextColor(state.quoteColor));endLayer(c);
  beginLayer(c,t,'messages');const cy=522;messageWindow(c,615,cy,295,390);text(c,'＋',628,cy+72,29,'#8c8291');for(let i=0;i<6;i++)photo(c,imgs[`chat${i+1}`],626,cy+95+i*43,29,29,15);text(c,'MESSAGES',680,cy+52,10,'#aaa0ad');text(c,'⌕ ⋮',860,cy+52,17,'#9e94a0');c.fillStyle='#ded6de';c.fillRect(672,cy+68,222,1);
- const lines=state.messages.split('\n').filter(Boolean).slice(0,5),conversation=messageFrame(lines,t,state.chat);
+ const lines=state.messages.split('\n').slice(0,2),conversation=messageFrame(lines,t,state.chat);
  const bubbles=conversation.items.map(item=>{const right=item.index%2,rows=textLines(c,item.text,right?152:163,11);c.font='500 11px "Noto Sans KR",sans-serif';const width=Math.max(46,Math.min(right?174:185,Math.max(...rows.map(row=>c.measureText(row).width))+22));return {...item,right,rows,width,height:28+(rows.length-1)*16.5}}),totalHeight=bubbles.reduce((sum,b)=>sum+b.height+8,0)+(conversation.typing?27:0);let bubbleY=cy+88-Math.max(0,totalHeight-248);
  c.save();
  for(const b of bubbles){
