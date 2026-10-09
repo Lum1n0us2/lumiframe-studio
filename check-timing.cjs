@@ -49,11 +49,11 @@ assert.equal(clips,0);assert.deepEqual(imageSize,[960,1500]);
 sandbox.state.card=true;sandbox.drawMainImage(imageContext,{width:480,height:750},0);
 assert.equal(clips,1);assert.deepEqual(imageSize,[960,1500]);
 console.log('PASS: main image grows beyond the initial card size, keeps its aspect ratio and has no fixed clipping boundary.');
-const effectNames=['sparkles','hearts','particles','circles','feathers'];
+const effectNames=['sparkles','outlineStars','hearts','particles','circles','feathers'];
 function effectTrace(time){const trace=[],saved=[];const recorder=new Proxy({globalAlpha:1,save(){saved.push(this.globalAlpha)},restore(){assert(saved.length);this.globalAlpha=saved.pop()}},{get(o,k){return k in o?o[k]:(...args)=>{for(const arg of args)if(typeof arg==='number')assert(Number.isFinite(arg));trace.push([k,o.globalAlpha,...args]);if(k==='createRadialGradient')return {addColorStop(...stop){trace.push(['colorStop',...stop])}}}}});sandbox.drawAtmosphere(recorder,time,1416,984,true);assert.equal(saved.length,0);assert.equal(recorder.globalAlpha,1);return trace}
 for(const name of effectNames){for(const key of effectNames)sandbox.state[key]=key===name;const first=effectTrace(1.25);assert(first.length>0);assert.deepEqual(effectTrace(1.25),first);assert.notDeepEqual(effectTrace(2.5),first);effectTrace(0);effectTrace(6)}
 for(const key of effectNames)sandbox.state[key]=false;assert.equal(effectTrace(2).length,0);
-console.log('PASS: five independent effects render finite paths, animate deterministically, and fully disappear when disabled.');
+console.log('PASS: six independent effects render finite paths, animate deterministically, and fully disappear when disabled.');
 for(let frame=0;frame<120;frame++){
  const thirds=[0,0,0];
  for(let i=0;i<12;i++){const p=sandbox.featherPose(i,frame/120,1416,984);assert(p.x>=0&&p.x<=1416);if(p.y>=0&&p.y<=984)thirds[Math.min(2,Math.floor(p.x/472))]++}
