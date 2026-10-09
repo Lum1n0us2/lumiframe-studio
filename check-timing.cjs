@@ -160,3 +160,9 @@ for(const count of [2,3]){
  assert.deepEqual(stops,count===2?[[0,'#112233'],[1,'#778899']]:[[0,'#112233'],[.5,'#445566'],[1,'#778899']]);
 }
 console.log('PASS: phone waveform supports independent two- and three-color gradients.');
+
+Object.assign(sandbox.state,{matchProfileDots:true,accent:'#000000',reply:'#ffffff'});
+assert.equal(JSON.stringify(sandbox.profileDotColors()),JSON.stringify(['#000000','#808080','#ffffff']));
+Object.assign(sandbox.state,{matchProfileDots:false,profileDot1:'#112233',profileDot2:'#445566',profileDot3:'#778899'});
+assert.equal(JSON.stringify(sandbox.profileDotColors()),JSON.stringify(['#112233','#445566','#778899']));
+console.log('PASS: profile dots match window gradient endpoints and midpoint, or retain three custom colors.');
