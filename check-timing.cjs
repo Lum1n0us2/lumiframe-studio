@@ -145,3 +145,11 @@ for(const [hour,minute,expected] of [[0,0,'00:00'],[9,5,'09:05'],[13,7,'13:07'],
  assert.equal(sandbox.phoneTime({getHours:()=>hour,getMinutes:()=>minute}),expected);
 }
 console.log('PASS: phone time uses zero-padded local 24-hour hours/minutes; GIF frames share one export timestamp.');
+
+for(const key of effectNames)sandbox.state[key]=key==='particles';
+for(const count of [0,1,137,600]){
+ sandbox.state.particleCount=count;
+ assert.equal(effectTrace(1).filter(call=>call[0]==='arc').length,count);
+}
+sandbox.state.particles=false;assert.equal(effectTrace(1).length,0);
+console.log('PASS: particle count renders 0–600 particles and the effect toggle still hides all particles.');
