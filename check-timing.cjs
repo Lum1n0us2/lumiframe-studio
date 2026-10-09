@@ -13,7 +13,7 @@ const starts=[0,2,6,9,12,26],fades=[4,5,4,5,6,5];
 for(const duration of [4,6]){sandbox.state.duration=duration;for(let frame=0;frame<duration*20;frame++){draws.length=0;sandbox.t=frame/20;vm.runInContext('render(c,t)',sandbox);assert.equal(stack.length,0);positions.forEach(([x,y],i)=>{const calls=draws.filter(d=>d.x===x&&d.y===y);assert(calls.length);const alpha=Math.max(...calls.map(d=>d.a));if(frame<=starts[i])assert.equal(alpha,0,`layer ${i} appeared early at frame ${frame}`);else if(frame<duration*20-[5,3,7,6,9,10][i]){assert(alpha>0,`layer ${i} missing at frame ${frame}`);if(frame>=starts[i]+fades[i])assert(alpha>.99)}});assert.equal(c.globalAlpha,1)}}
 assert.equal(vm.runInContext('GIF_FPS',sandbox),20);
 assert(source.includes('const count=state.duration*GIF_FPS;'));
-assert(source.includes('render(g,i/GIF_FPS);'));
+assert(source.includes('render(g,i/GIF_FPS,exportDate);'));
 assert(source.includes('[33,249,4,0,100/GIF_FPS,0,0,0,44,'));
 assert(source.includes('duration:6'));
 console.log('PASS: reference entrance frames 1/3/7/10/13/27; every frame checked for 4/6-second loops. Default export: 120 frames, 50ms per frame, 6 seconds.');
@@ -140,3 +140,8 @@ for(const duration of [4,6]){
  assert.equal(chat(0).items.length,0);
 }
 console.log('PASS: 4s/80-frame and 6s/120-frame exits differ by 40 frames; both messages finish before exit and reset on replay.');
+
+for(const [hour,minute,expected] of [[0,0,'00:00'],[9,5,'09:05'],[13,7,'13:07'],[23,59,'23:59']]){
+ assert.equal(sandbox.phoneTime({getHours:()=>hour,getMinutes:()=>minute}),expected);
+}
+console.log('PASS: phone time uses zero-padded local 24-hour hours/minutes; GIF frames share one export timestamp.');
