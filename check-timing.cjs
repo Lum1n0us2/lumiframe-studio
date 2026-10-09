@@ -161,8 +161,8 @@ for(const count of [2,3]){
 }
 console.log('PASS: phone waveform supports independent two- and three-color gradients.');
 
-Object.assign(sandbox.state,{matchProfileDots:true,accent:'#000000',reply:'#ffffff'});
-assert.equal(JSON.stringify(sandbox.profileDotColors()),JSON.stringify(['#000000','#808080','#ffffff']));
+Object.assign(sandbox.state,{matchProfileDots:true,accent:'#000000',reply:'#ffffff',messageColor:'#ff6699'});
+assert.equal(JSON.stringify(sandbox.profileDotColors()),JSON.stringify(['#000000','#ffffff','#ff6699']));
 Object.assign(sandbox.state,{matchProfileDots:false,profileDot1:'#112233',profileDot2:'#445566',profileDot3:'#778899'});
 assert.equal(JSON.stringify(sandbox.profileDotColors()),JSON.stringify(['#112233','#445566','#778899']));
-console.log('PASS: profile dots match window gradient endpoints and midpoint, or retain three custom colors.');
+console.log('PASS: profile dots match both window gradient colors and outgoing bubble color, or retain three custom colors.');
