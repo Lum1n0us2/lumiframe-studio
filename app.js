@@ -185,7 +185,9 @@ function drawAtmosphere(c,t,w,h,dark){
   softLight(c,x,y,radius,color,alpha);
  }
  if(state.sparkles)for(let i=0;i<27;i++){
-  const x=effectSeed(i,4)*w,y=effectSeed(i,5)*h,r=3+effectSeed(i,6)*9,alpha=.15+.65*(.5+.5*Math.sin(turn*2+i)),tint=dark?'#ffffff':'#d8b9cf';
+  const pulse=.5+.5*Math.sin(turn*2+i),size=pulse*pulse*(3-2*pulse);
+  if(size<.001)continue;
+  const x=effectSeed(i,4)*w,y=effectSeed(i,5)*h,r=(3+effectSeed(i,6)*9)*size,alpha=.8*size,tint=dark?'#ffffff':'#d8b9cf';
   softLight(c,x,y,r*2.2,tint,alpha*.48);star(c,x,y,r,alpha,tint);
  }
  if(state.hearts)for(let i=0;i<25;i++){
