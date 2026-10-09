@@ -3,12 +3,12 @@ const presets=[
  {name:'분홍빛 설렘',en:'PINK DAYDREAM',bg:'#fffafb',accent:'#efb3d0',reply:'#9cd8eb',pair:'Pair Name',handle:'@ID',quote:'Sample Text',song:'Song Title',artist:'Artist'}
 ];
 const backgroundDefaults={bgMode:'solid',bgLeft:'#ead7e4',bgEnd:'#b49bc9',bgDirection:'down',bgStart:60};
-const effectDefaults={particles:true,circles:true,feathers:false};
+const effectDefaults={particles:true,circles:true,feathers:false,outlineStars:false};
 let state={...backgroundDefaults,...effectDefaults,theme:3,...presets[0],quoteColor:presets[0].accent,messageColor:presets[0].reply,messages:'Text1\nText2',zoom:1,position:.5,card:false,sparkles:true,hearts:true,float:true,chat:true,switch:true,duration:6};
 let musicRequest=0;
 let sources={},imgs={},playing=true,elapsed=0,last=performance.now(),exporting=false,audio=new Audio();
 const canvas=$('canvas'),ctx=canvas.getContext('2d');
-const keys=['bgMode','bgLeft','bgEnd','bgDirection','bgStart','bg','accent','reply','quoteColor','messageColor','pair','handle','quote','messages','song','artist','zoom','position','card','sparkles','hearts','particles','circles','feathers','float','chat','switch','duration'];
+const keys=['bgMode','bgLeft','bgEnd','bgDirection','bgStart','bg','accent','reply','quoteColor','messageColor','pair','handle','quote','messages','song','artist','zoom','position','card','sparkles','outlineStars','hearts','particles','circles','feathers','float','chat','switch','duration'];
 const slots=[['main','메인 일러스트','왼쪽의 큰 이미지'],['a','스마트폰 · A','첫 번째 화면'],['b','스마트폰 · B','두 번째 화면'],['cover','앨범 커버','음악 위젯의 작은 이미지'],['profile','프로필 이미지','이름 카드의 원형 프로필'],...Array.from({length:6},(_,i)=>[`chat${i+1}`,`메시지 프로필 ${i+1}`,`메시지 창 왼쪽 · 위에서 ${i+1}번째`])];
 function completeAssets(assets){return Object.fromEntries(slots.map(([k])=>[k,assets[k]??null]))}
 function toast(s){$('toast').textContent=s;$('toast').classList.add('show');setTimeout(()=>$('toast').classList.remove('show'),2600)}
@@ -189,6 +189,14 @@ function drawAtmosphere(c,t,w,h,dark){
   if(size<.001)continue;
   const x=effectSeed(i,4)*w,y=effectSeed(i,5)*h,r=(3+effectSeed(i,6)*9)*size,alpha=.8*size,tint=dark?'#ffffff':'#d8b9cf';
   softLight(c,x,y,r*2.2,tint,alpha*.48);star(c,x,y,r,alpha,tint);
+ }
+ if(state.outlineStars)for(let i=0;i<20;i++){
+  const pulse=.5+.5*Math.sin(turn*2+i*1.7),scale=pulse*pulse*(3-2*pulse);
+  if(scale<.001)continue;
+  const x=effectSeed(i,20)*w,y=effectSeed(i,21)*h,r=(9+effectSeed(i,22)*12)*scale,alpha=.55*scale;
+  softLight(c,x,y,r*1.7,color,alpha*.3);
+  c.save();c.translate(x,y);c.rotate(Math.sin(turn+i)*.15);c.globalAlpha=alpha;c.strokeStyle=color;c.lineWidth=1.3*scale;c.lineJoin='round';
+  c.beginPath();for(let point=0;point<10;point++){const angle=-Math.PI/2+point*Math.PI/5,radius=point%2?r*.45:r;const px=Math.cos(angle)*radius,py=Math.sin(angle)*radius;if(point===0)c.moveTo(px,py);else c.lineTo(px,py)}c.closePath();c.stroke();c.restore();
  }
  if(state.hearts)for(let i=0;i<25;i++){
   const x=effectSeed(i,7)*w+Math.sin(turn+i)*8,y=effectSeed(i,8)*h+Math.cos(turn+i)*6,size=8+effectSeed(i,9)*13;
